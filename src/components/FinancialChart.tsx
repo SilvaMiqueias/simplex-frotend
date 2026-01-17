@@ -15,17 +15,51 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { getAllChartAdmin, getAllChartCustomer } from "@/services/dashboardService";
+let dataCharts = [];
 
-const mockData = [
-  { month: "Jan", receitas: 5800, despesas: 3200 },
-  { month: "Fev", receitas: 5500, despesas: 3800 },
-  { month: "Mar", receitas: 6200, despesas: 3500 },
-  { month: "Abr", receitas: 5900, despesas: 4100 },
-  { month: "Mai", receitas: 6500, despesas: 3900 },
-  { month: "Jun", receitas: 7000, despesas: 4200 },
-];
 
 export function FinancialChart() {
+const { role } = useAuth();
+  
+
+useEffect(() => {
+      if (!role) return;
+        getCharts();
+}, [role]);
+ 
+async function getCharts() {
+        if (role === "ROLE_ADMIN") {
+          const { dataAdmin } = await getAllChartAdmin();
+          dataCharts = dataAdmin.map(item => ({
+            month: getMesAbreviadoCapitalize(item.months),
+            income: item.income,
+            expense: item.expense,
+          }));
+
+
+        } else {
+          const  dataCustomer = await getAllChartCustomer();
+            dataCharts = dataCustomer.map(item => ({
+            month: getMesAbreviadoCapitalize(item.months),
+            income: item.income,
+            expense: item.expense,
+          }));
+        }
+}
+
+
+function getMesAbreviadoCapitalize(date: Date | string) {
+  const mes = new Intl.DateTimeFormat("pt-BR", {
+    month: "short",
+  }).format(new Date(date));
+
+  return mes.charAt(0).toUpperCase() + mes.slice(1);
+}
+
+
   return (
     <div>
       <h3 className="text-lg font-semibold mb-6 text-left">
@@ -40,7 +74,7 @@ export function FinancialChart() {
       >
         <ResponsiveContainer width="100%" height={280}>
           <BarChart
-            data={mockData}
+            data={dataCharts}
             barGap={8}
             margin={{ top: 0, right: 40, bottom: 0, left: 0 }}
           >
@@ -67,13 +101,13 @@ export function FinancialChart() {
             />
             <ChartLegend content={<ChartLegendContent />} />
             <Bar
-              dataKey="receitas"
+              dataKey="income"
               name="Receitas"
               fill="var(--color-receitas)"
               radius={[6, 6, 0, 0]}
             />
             <Bar
-              dataKey="despesas"
+              dataKey="expense"
               name="Despesas"
               fill="var(--color-despesas)"
               radius={[6, 6, 0, 0]}
@@ -98,7 +132,7 @@ export function TrendChart() {
       >
         <ResponsiveContainer width="100%" height={280}>
           <LineChart
-            data={mockData}
+            data={dataCharts}
             margin={{ top: 0, right: 40, bottom: 0, left: 0 }}
           >
             <CartesianGrid
@@ -125,7 +159,7 @@ export function TrendChart() {
             <ChartLegend content={<ChartLegendContent />} />
             <Line
               type="monotone"
-              dataKey="receitas"
+              dataKey="income"
               name="Receitas"
               stroke="var(--color-receitas)"
               strokeWidth={2.5}
@@ -134,7 +168,7 @@ export function TrendChart() {
             />
             <Line
               type="monotone"
-              dataKey="despesas"
+              dataKey="expense"
               name="Despesas"
               stroke="var(--color-despesas)"
               strokeWidth={2.5}

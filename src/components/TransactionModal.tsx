@@ -166,7 +166,7 @@ export function TransactionModal({
 
             <div className="grid gap-2">
               <Label htmlFor="description">Descrição</Label>
-              <Input
+              <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) =>

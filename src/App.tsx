@@ -14,6 +14,9 @@ import MarketData from "./pages/MarketData";
 import CurrencyConverter from "./pages/CurrencyConverter";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { TwoFactorRoute } from "./context/TwoFactorRoute";
+import TwoFactor from "./context/TwoFactor";
+import { ProtectedLayout } from "./context/ProtectedLayout";
 
 const queryClient = new QueryClient();
 
@@ -25,20 +28,36 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />}>
-              <Route index element={<Navigate to="/login" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="transactions" element={<Transactions />} />
-              <Route path="budgets" element={<Budgets />} />
-              <Route path="market-data" element={<MarketData />} />
-              <Route
-                path="currency-converter"
-                element={<CurrencyConverter />}
-              />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+            {/* ROTAS PÚBLICAS */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+
+            {/* ROTA 2FA */}
+            <Route
+              path="/2fa"
+              element={
+                <TwoFactorRoute>
+                  <TwoFactor />
+                </TwoFactorRoute>
+              }
+            />
+
+            {/* LAYOUT PROTEGIDO */}
+            <Route element={<ProtectedLayout />}>
+              <Route path="/" element={<Index />}>
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="transactions" element={<Transactions />} />
+                <Route path="budgets" element={<Budgets />} />
+                <Route path="market-data" element={<MarketData />} />
+                <Route
+                  path="currency-converter"
+                  element={<CurrencyConverter />}
+                />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+            </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

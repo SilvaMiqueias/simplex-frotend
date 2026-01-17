@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 import {
   Card,
   CardContent,
@@ -10,17 +11,43 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { loginWithPassword } = useAuth();
+  const { status } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simular login
-    navigate("/dashboard");
-  };
+
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    await loginWithPassword(email, password);
+
+    /**
+     * Se o backend exigir 2FA,
+     * o status vira "2fa_pending"
+     */
+    if (status === "2fa_required" ||
+      status === "2fa_setup") {
+      navigate("/2fa");
+      return;
+    }
+
+    /**
+     * Se login completo (sem 2FA)
+     */
+    if (status === "authenticated") {
+      navigate("/dashboard");
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Erro ao fazer login");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

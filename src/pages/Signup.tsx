@@ -10,17 +10,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Signup() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const handleSignup = (e: React.FormEvent) => {
+  const { createUserCustomer, loginWithPassword, status } = useAuth();
+  
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simular cadastro
-    navigate("/");
+   
+    try{
+      await createUserCustomer(name, email, password);
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao criar usuário");
+    }
+    navigate("/login");
   };
 
   return (

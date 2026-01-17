@@ -4,8 +4,86 @@ import { TransactionList } from "@/components/TransactionList";
 import { FinancialChart, TrendChart } from "@/components/FinancialChart";
 import { CurrencyRates } from "@/components/CurrencyRates";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { getAllCardAdmin, getAllCardCustomer } from "@/services/dashboardService";
 
 export default function Dashboard() {
+
+  const { role } = useAuth();
+  const [dataCards, setDataCards] = useState<any | null>(null);
+  let percentExpense: boolean = false ;
+  let percentIncome:  boolean = false ;
+  let percentTotal: boolean = false;
+
+       
+   useEffect(() => {
+     if (!role) return;
+       getCards();
+   }, [role]);
+
+   async function getCards() {
+       if (role === "ROLE_ADMIN") {
+         const { dataAdmin } = await getAllCardAdmin();
+         setDataCards(dataAdmin);
+       } else {
+         const  dataCustomer = await getAllCardCustomer();
+         setDataCards(dataCustomer);
+       }
+     }
+ 
+
+
+   function formattedToReal(value: number){
+      const balanceFormatted = value.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+        return balanceFormatted;
+   }
+
+   
+   function calculateBalance(month: any) {
+      const income = month?.income ?? 0;
+      const expense = month?.expense ?? 0;
+      return  income - expense;
+    } 
+
+   function compareMonths(current: number, previous: number) {
+      if (previous === 0) {
+        return current === 0 ? 0 : 100;
+      }
+
+      return ((current - previous) / Math.abs(previous)) * 100;
+    }
+
+    function compareIncome(current: number, previous: number){
+       const result = compareMonths(current, previous)
+       if(result >= 0 ){
+        percentIncome = true;
+       }
+       return String(Math.abs(result).toFixed(2));
+    }
+
+    function compareExpense(current: number, previous: number){
+       const result = compareMonths(current, previous)
+       if(result >= 0 ){
+        percentExpense = true;
+       }
+       return String(Math.abs(result).toFixed(2));
+    }
+
+    function compareTotal(){
+      const currentMonth = calculateBalance(dataCards?.currentMonth)
+      const previousMonth = calculateBalance(dataCards?.previousMonth)
+
+      const result = compareMonths(currentMonth, previousMonth)
+      percentTotal = result >= 0;
+      return `${Math.abs(result).toFixed(2)}`;
+    }
+
+
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -20,24 +98,24 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-3">
         <DashboardCard
           title="Receitas"
-          value="R$ 7.000,00"
+          value={formattedToReal(dataCards?.currentMonth?.income ?? 0)}
           icon={TrendingUp}
           variant="success"
-          trend={{ value: "12.5%", positive: true }}
+          trend={{ value: compareIncome(dataCards?.currentMonth?.income ?? 0, dataCards?.previousMonth?.income ?? 0) + '%', positive: percentIncome }}
         />
         <DashboardCard
           title="Despesas"
-          value="R$ 4.200,00"
+          value={formattedToReal(dataCards?.currentMonth?.expense ?? 0)}
           icon={TrendingDown}
           variant="destructive"
-          trend={{ value: "8.3%", positive: false }}
+          trend={{ value: compareExpense(dataCards?.currentMonth?.expense ?? 0, dataCards?.previousMonth?.expense ?? 0) + '%', positive: percentExpense }}
         />
         <DashboardCard
           title="Saldo"
-          value="R$ 2.800,00"
+          value={formattedToReal(calculateBalance(dataCards?.currentMonth))}          
           icon={Wallet}
           variant="default"
-          trend={{ value: "18.2%", positive: true }}
+          trend={{ value: String(compareTotal() + '%'), positive: percentTotal }}
         />
       </div>
 
