@@ -17,4 +17,5 @@ export function ThemeToggle() {
       <span className="sr-only">Alternar tema</span>
     </Button>
   );
+  
 }
