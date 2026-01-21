@@ -19,15 +19,21 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { TrendingDown, TrendingUp } from "lucide-react";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ChevronDownIcon } from "lucide-react"
+import { Transaction } from "@/components/model/transaction";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-interface Transaction {
-  id: string;
-  description: string;
-  amount: number;
-  category: string;
-  date: string;
-  type: "income" | "expense";
-}
 
 interface TransactionModalProps {
   open: boolean;
@@ -36,17 +42,41 @@ interface TransactionModalProps {
   onSave: (transaction: Transaction) => void;
 }
 
-const categories = [
-  "Salário",
-  "Freelance",
-  "Investimentos",
-  "Alimentação",
-  "Moradia",
-  "Transporte",
-  "Lazer",
-  "Saúde",
-  "Educação",
-  "Outros",
+interface Entity{
+  id: number;
+  name: string;
+  description: string;
+}
+
+ const categoryList:  Entity[] = [
+  {id: 0, name: 'FOOD', description: 'Alimentação'},
+  {id: 1, name: 'HEALTH', description: 'Saúde'},
+  {id: 2, name: 'TRANSPORT', description: 'Transporte'},
+  {id: 3, name: 'EDUCATION', description: 'Educação'},
+  {id: 4, name: 'ENTERTAINMENT', description: 'Entretenimento'},
+  {id: 5, name: 'HOUSING', description: 'Habitação'},
+  {id: 6, name: 'SALARY', description: 'Salário'},
+  {id: 7, name: 'INVESTMENT', description: 'Investimento'},
+  {id: 8, name: 'TAXES', description: 'Impostos'},
+  {id: 9, name: 'UTILITIES', description: 'Utilidades'},
+  {id: 10, name: 'OTHER', description: 'Outros'}
+];
+
+ const paymentMethodList:  Entity[] = [
+  {id: 0, name: 'CASH', description: 'Dinheiro'},
+  {id: 1, name: 'DEBIT_CARD', description: 'Cartão de Débito'},
+  {id: 2, name: 'CREDIT_CARD', description: 'Cartão de Crédito'},
+  {id: 3, name: 'PIX', description: 'Pix'},
+  {id: 4, name: 'BANK_TRANSFER', description: 'Transferência Bancária'},
+  {id: 5, name: 'BOLETO', description: 'Boleto'},
+  {id: 6, name: 'DIGITAL_WALLET', description: 'Carteira Digital'},
+  {id: 7, name: 'OTHER', description: 'Outro'}
+];
+
+ const recurrenceType:  Entity[] = [
+  {id: 0, name: 'WEEKLY', description: 'Semanal'},
+  {id: 1, name: 'MONTHLY', description: 'Mensal'},
+  {id: 2, name: 'YEARLY', description: 'Anual'}
 ];
 
 export function TransactionModal({
@@ -55,27 +85,15 @@ export function TransactionModal({
   transaction,
   onSave,
 }: TransactionModalProps) {
-  const [formData, setFormData] = useState<Transaction>({
-    id: "",
-    description: "",
-    amount: 0,
-    category: "",
-    date: new Date().toISOString().split("T")[0],
-    type: "expense",
-  });
+  const [formData, setFormData] = useState<Transaction>(new Transaction());
+
+  const [openCalendar, setOpenCalendar] = useState(false)
 
   useEffect(() => {
     if (transaction) {
       setFormData(transaction);
     } else {
-      setFormData({
-        id: "",
-        description: "",
-        amount: 0,
-        category: "",
-        date: new Date().toISOString().split("T")[0],
-        type: "expense",
-      });
+      setFormData(new Transaction());
     }
   }, [transaction, open]);
 
@@ -84,8 +102,13 @@ export function TransactionModal({
     onSave(formData);
   };
 
+  const parseLocalDate = (dateString: string) => {
+    const [year, month, day] = dateString.split("-").map(Number);
+    return new Date(year, month - 1, day); 
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open}   onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
@@ -102,10 +125,10 @@ export function TransactionModal({
               <div className="grid grid-cols-2 gap-3" id="type">
                 <button
                   type="button"
-                  aria-pressed={formData.type === "income"}
-                  onClick={() => setFormData({ ...formData, type: "income" })}
+                  aria-pressed={formData.transactionType === "INCOME"}
+                  onClick={() => setFormData({ ...formData, transactionType: "INCOME" })}
                   className={`rounded-xl border p-4 text-left transition-smooth ${
-                    formData.type === "income"
+                    formData.transactionType === "INCOME"
                       ? "bg-[#22c55e]/10 border-[#22c55e]"
                       : "hover:bg-muted/50"
                   }`}
@@ -113,14 +136,14 @@ export function TransactionModal({
                   <div className="flex items-center gap-2">
                     <TrendingUp
                       className={`h-5 w-5 ${
-                        formData.type === "income"
+                        formData.transactionType === "INCOME"
                           ? "text-[#22c55e]"
                           : "text-muted-foreground"
                       }`}
                     />
                     <span
                       className={`font-semibold ${
-                        formData.type === "income" ? "text-[#16a34a]" : ""
+                        formData.transactionType === "INCOME" ? "text-[#16a34a]" : ""
                       }`}
                     >
                       Receita
@@ -133,10 +156,10 @@ export function TransactionModal({
 
                 <button
                   type="button"
-                  aria-pressed={formData.type === "expense"}
-                  onClick={() => setFormData({ ...formData, type: "expense" })}
+                  aria-pressed={formData.transactionType === "EXPENSE"}
+                  onClick={() => setFormData({ ...formData, transactionType: "EXPENSE" })}
                   className={`rounded-xl border p-4 text-left transition-smooth ${
-                    formData.type === "expense"
+                    formData.transactionType === "EXPENSE"
                       ? "bg-[#ef4444]/10 border-[#ef4444]"
                       : "hover:bg-muted/50"
                   }`}
@@ -144,14 +167,14 @@ export function TransactionModal({
                   <div className="flex items-center gap-2">
                     <TrendingDown
                       className={`h-5 w-5 ${
-                        formData.type === "expense"
+                        formData.transactionType === "EXPENSE"
                           ? "text-[#ef4444]"
                           : "text-muted-foreground"
                       }`}
                     />
                     <span
                       className={`font-semibold ${
-                        formData.type === "expense" ? "text-[#dc2626]" : ""
+                        formData.transactionType === "EXPENSE" ? "text-[#dc2626]" : ""
                       }`}
                     >
                       Despesa
@@ -165,19 +188,94 @@ export function TransactionModal({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
+              <Label htmlFor="category">Categoria</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, category: value })
                 }
-                placeholder="Ex: Salário, Aluguel, Supermercado..."
-                required
-              />
+              >
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryList.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-2">
+              <Label htmlFor="paymentMethod">Tipo de Pagamento</Label>
+              <Select
+                value={formData.paymentMethod}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, paymentMethod: value })
+                }
+              >
+                <SelectTrigger id="paymentMethod">
+                  <SelectValue placeholder="Selecione um tipo de pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethodList.map((pm) => (
+                    <SelectItem key={pm.id} value={pm.name}>
+                      {pm.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="recurring">Recorrência</Label>
+              <RadioGroup
+                  value={formData.recurring ? "true" : "false"}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      recurring: value === "true",
+                    })
+                  }
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="true" id="recurring-yes" />
+                    <Label htmlFor="recurring-yes">Sim</Label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="false" id="recurring-no" />
+                    <Label htmlFor="recurring-no">Não</Label>
+                  </div>
+              </RadioGroup>
+            </div>
+             {formData.recurring && (
+              <div className="grid gap-2">
+                <Label htmlFor="recurrenceType">Tipo de Recorrência</Label>
+                <Select
+                  value={formData.recurrenceType}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, recurrenceType: value })
+                  }
+                >
+                  <SelectTrigger id="recurrenceType">
+                    <SelectValue placeholder="Selecione um tipo de recerrência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recurrenceType.map((rp) => (
+                      <SelectItem key={rp.id} value={rp.name}>
+                        {rp.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+             )}
+
+             <div className="grid gap-2">
               <Label htmlFor="amount">Valor (R$)</Label>
               <Input
                 id="amount"
@@ -196,27 +294,19 @@ export function TransactionModal({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category: value })
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
                 }
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Ex: Salário, Aluguel, Supermercado..."
+                required
+              />
             </div>
-
-            <div className="grid gap-2">
+  
+           {/*  <div className="grid gap-2">
               <Label htmlFor="date">Data</Label>
               <Input
                 id="date"
@@ -227,8 +317,56 @@ export function TransactionModal({
                 }
                 required
               />
+            </div> */}
+
+            <div className="grid flex flex-col gap-2">
+              <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
+                <Label htmlFor="date">Data</Label>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      id="date"
+                      className="w-full justify-start text-left"
+                    >
+                      {formData.dateTransaction ? formData?.dateTransaction.split('T')[0] : "Selecione uma data"}
+                      <ChevronDownIcon />
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="overflow-hidden p-0 w-[400px]" align="start">
+                   <Calendar
+                          mode="single"
+                          selected={
+                            formData.dateTransaction
+                              ? parseLocalDate(formData.dateTransaction)
+                              : undefined
+                          }
+                          onSelect={(date) =>
+                            date &&
+                            setFormData({
+                              ...formData,
+                              dateTransaction: date.toISOString()
+                            })
+                          }
+                          className="rounded-md border shadow-sm"
+                          captionLayout="dropdown"
+                          locale={ptBR}
+                          formatters={{
+                            formatCaption: (date) =>
+                              format(date, "MMM yyyy ", { locale: ptBR }),
+
+                            formatWeekdayName: (date) =>
+                              format(date, "eee", { locale: ptBR }),
+
+                  
+                          }}
+                        />
+                  </PopoverContent>
+                </Popover>               
             </div>
+
           </div>
+
           <DialogFooter className="!flex !flex-row w-full justify-end gap-2">
             <Button
               type="button"

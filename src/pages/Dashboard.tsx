@@ -23,8 +23,8 @@ export default function Dashboard() {
    }, [role]);
 
    async function getCards() {
-       if (role === "ROLE_ADMIN") {
-         const { dataAdmin } = await getAllCardAdmin();
+       if (role === "ROLE_ADMINISTRATOR") {
+         const  dataAdmin  = await getAllCardAdmin();
          setDataCards(dataAdmin);
        } else {
          const  dataCustomer = await getAllCardCustomer();
@@ -32,7 +32,6 @@ export default function Dashboard() {
        }
      }
  
-
 
    function formattedToReal(value: number){
       const balanceFormatted = value.toLocaleString("pt-BR", {
@@ -81,7 +80,6 @@ export default function Dashboard() {
       percentTotal = result >= 0;
       return `${Math.abs(result).toFixed(2)}`;
     }
-
 
 
   return (

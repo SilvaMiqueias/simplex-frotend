@@ -12,6 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User, LogOut } from "lucide-react";
+import { Toaster } from "@/components/ui/toaster";
+import { LoadingProvider } from "@/context/LoadingContext";
+
 
 const Index = () => {
   const navigate = useNavigate();
@@ -21,8 +24,10 @@ const Index = () => {
   const userInitials = "ST";
 
   return (
-    <SidebarProvider>
+    <LoadingProvider>
+      <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
+        <Toaster />
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <header className="h-16 border-b border-border/50 flex items-center px-4 sm:px-6 md:px-8 glass sticky top-0 z-10">
@@ -89,7 +94,8 @@ const Index = () => {
           </main>
         </div>
       </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </LoadingProvider>
   );
 };
 

@@ -31,15 +31,13 @@ useEffect(() => {
 }, [role]);
  
 async function getCharts() {
-        if (role === "ROLE_ADMIN") {
-          const { dataAdmin } = await getAllChartAdmin();
+        if (role === "ROLE_ADMINISTRATOR") {
+          const  dataAdmin  = await getAllChartAdmin();
           dataCharts = dataAdmin.map(item => ({
             month: getMesAbreviadoCapitalize(item.months),
             income: item.income,
             expense: item.expense,
           }));
-
-
         } else {
           const  dataCustomer = await getAllChartCustomer();
             dataCharts = dataCustomer.map(item => ({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Search, Filter, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,54 +30,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface Transaction {
-  id: string;
-  description: string;
-  amount: number;
-  category: string;
-  date: string;
-  type: "income" | "expense";
-}
-
-const mockTransactions: Transaction[] = [
-  {
-    id: "1",
-    description: "Salário",
-    amount: 5000,
-    category: "Salário",
-    date: "2024-01-15",
-    type: "income",
-  },
-  {
-    id: "2",
-    description: "Aluguel",
-    amount: 1500,
-    category: "Moradia",
-    date: "2024-01-10",
-    type: "expense",
-  },
-  {
-    id: "3",
-    description: "Supermercado",
-    amount: 350,
-    category: "Alimentação",
-    date: "2024-01-08",
-    type: "expense",
-  },
-  {
-    id: "4",
-    description: "Freelance",
-    amount: 800,
-    category: "Freelance",
-    date: "2024-01-05",
-    type: "income",
-  },
-];
+import { useAuth } from "@/context/AuthContext";
+import { createTransaction, deleteTransaction, getAllTransactionByAdmin, getAllTransactionByCustomer, updateTransaction } from "@/services/transactionsService";
+import { Transaction } from "@/components/model/transaction";
+import { toast } from "sonner";
+import { useLoading } from "@/context/LoadingContext";
+import { Category, categoryList, getAllCategories, getDescriptionCategory } from "@/components/model/category";
 
 export default function Transactions() {
-  const [transactions, setTransactions] =
-    useState<Transaction[]>(mockTransactions);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<
     Transaction | undefined
@@ -88,41 +48,86 @@ export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const { role } = useAuth();
+  const [dataTransaction, setDataTransaction] = useState<Transaction[]>([]);
+  const { setLoading } = useLoading();
+  const [reload, setReload] = useState(0);
+  const [catogories, setCategories] =  useState<Category[]>([]);
 
-  const categories = Array.from(new Set(transactions.map((t) => t.category)));
 
-  const filteredTransactions = transactions.filter((transaction) => {
+
+  useEffect(() => {
+      if (!role) return;
+        getAllTransactions();
+  }, [role, reload]);
+ 
+  async function getAllTransactions() {
+    if (role === "ROLE_ADMINISTRATOR") {
+          const  dataAdmin  = await getAllTransactionByAdmin();
+          dataAdmin.reverse();
+          setDataTransaction(dataAdmin);
+    } else {
+          const  dataCustomer = await getAllTransactionByCustomer();
+          dataCustomer.reverse();
+          setDataTransaction(dataCustomer);
+    }
+  }
+
+  const filteredTransactions = dataTransaction.filter((transaction) => {
     const matchesSearch = transaction.description
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" || transaction.type === filterType;
+    const matchesType = filterType === "all" || transaction.transactionType === filterType;
     const matchesCategory =
       filterCategory === "all" || transaction.category === filterCategory;
     return matchesSearch && matchesType && matchesCategory;
   });
 
-  const handleSave = (transaction: Transaction) => {
-    if (editingTransaction) {
-      setTransactions(
-        transactions.map((t) => (t.id === transaction.id ? transaction : t))
-      );
-    } else {
-      setTransactions([
-        ...transactions,
-        { ...transaction, id: Date.now().toString() },
-      ]);
+  async function  handleSave(transaction: Transaction)  {
+    setLoading(true);
+    try{
+      if (editingTransaction) {
+       await update(transaction);
+      } else {
+       await create(transaction);
+      }
+
+      setIsModalOpen(false);
+      setEditingTransaction(undefined);
+      setReload((prev) => prev + 1);
+    }catch(error){
+      toast.error('Ocorreu um erro!')
+    }finally{
+      setLoading(false);
     }
-    setIsModalOpen(false);
-    setEditingTransaction(undefined);
   };
+
+  async function create(transaction: Transaction) {
+    await createTransaction(transaction);
+    toast.success("Criado com sucesso!");
+  }
+
+  async function  update(transaction: Transaction) {
+    await updateTransaction(transaction);
+    toast.success("Editado com sucesso!");
+  }
 
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setTransactions(transactions.filter((t) => t.id !== id));
+  async function handleDelete(id: number){
+   setLoading(true);
+   try{
+    await deleteTransaction(id);
+    toast.success('Transação excluída com sucesso!');
+    setReload((prev) => prev + 1);
+   }catch(erro){
+      toast.error('Ocorreu um erro ao excluir a transação!');    
+   }finally{
+    setLoading(false);
+   }
   };
 
   const openDeleteDialog = (transaction: Transaction) => {
@@ -132,11 +137,12 @@ export default function Transactions() {
 
   const confirmDelete = () => {
     if (transactionToDelete) {
-      handleDelete(transactionToDelete.id);
+      handleDelete(Number(transactionToDelete.id));
     }
     setIsDeleteOpen(false);
     setTransactionToDelete(null);
   };
+
 
   return (
     <div className="space-y-6">
@@ -177,8 +183,8 @@ export default function Transactions() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="income">Receitas</SelectItem>
-                <SelectItem value="expense">Despesas</SelectItem>
+                <SelectItem value="INCOME">Receitas</SelectItem>
+                <SelectItem value="EXPENSE">Despesas</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterCategory} onValueChange={setFilterCategory}>
@@ -187,9 +193,9 @@ export default function Transactions() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
+                {categoryList.map((category) => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.description}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -220,32 +226,32 @@ export default function Transactions() {
                 {filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>
-                      {new Date(transaction.date).toLocaleDateString("pt-BR")}
+                      {new Date(transaction.dateTransaction).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="font-medium">
                       {transaction.description}
                     </TableCell>
-                    <TableCell>{transaction.category}</TableCell>
+                    <TableCell>{getDescriptionCategory(transaction.category)}</TableCell>
                     <TableCell>
                       <Badge
                         variant={
-                          transaction.type === "income"
+                          transaction?.transactionType === "INCOME"
                             ? "default"
                             : "destructive"
                         }
                         className={
-                          transaction.type === "income" ? "bg-success" : ""
+                          transaction?.transactionType === "INCOME" ? "bg-success" : ""
                         }
                       >
-                        {transaction.type === "income" ? "Receita" : "Despesa"}
+                        {transaction?.transactionType === "INCOME" ? "Receita" : "Despesa"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-left font-medium">
                       <span className="inline-flex items-baseline justify-start tabular-nums font-mono">
                         <span className="inline-block w-3 text-muted-foreground">
-                          {transaction.type === "income" ? "+" : "-"}
+                          {transaction?.transactionType === "INCOME" ? "+" : "-"}
                         </span>
-                        {transaction.amount.toLocaleString("pt-BR", {
+                        {transaction?.amount?.toLocaleString("pt-BR", {
                           style: "currency",
                           currency: "BRL",
                         })}
@@ -288,17 +294,17 @@ export default function Transactions() {
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    {new Date(transaction.date).toLocaleDateString("pt-BR")}
+                    {new Date(transaction.dateTransaction).toLocaleDateString("pt-BR")}
                   </p>
                   <Badge
                     variant={
-                      transaction.type === "income" ? "default" : "destructive"
+                      transaction.transactionType === "INCOME" ? "default" : "destructive"
                     }
                     className={
-                      transaction.type === "income" ? "bg-success" : ""
+                      transaction.transactionType === "INCOME" ? "bg-success" : ""
                     }
                   >
-                    {transaction.type === "income" ? "Receita" : "Despesa"}
+                    {transaction.transactionType === "INCOME" ? "Receita" : "Despesa"}
                   </Badge>
                 </div>
                 <div className="space-y-1">
@@ -309,7 +315,7 @@ export default function Transactions() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-semibold tabular-nums">
-                    {transaction.type === "income" ? "+" : "-"}
+                    {transaction.transactionType === "INCOME" ? "+" : "-"}
                     {transaction.amount.toLocaleString("pt-BR", {
                       style: "currency",
                       currency: "BRL",
@@ -344,7 +350,7 @@ export default function Transactions() {
 
       <TransactionModal
         open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        onOpenChange={(isOpen) =>  {setIsModalOpen(isOpen); setEditingTransaction(undefined);} }
         transaction={editingTransaction}
         onSave={handleSave}
       />

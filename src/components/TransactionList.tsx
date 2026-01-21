@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,59 +7,39 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import { getAllTransactionByAdmin, getAllTransactionByCustomer } from "@/services/transactionsService";
+import { Transaction } from "./model/transaction";
+import { getDescriptionCategory } from "./model/category";
 
-interface Transaction {
-  id: string;
-  description: string;
-  amount: number;
-  category: string;
-  date: string;
-  type: "income" | "expense";
-}
 
-const mockTransactions: Transaction[] = [
-  {
-    id: "1",
-    description: "Salário",
-    amount: 5000,
-    category: "Salário",
-    date: "2024-01-15",
-    type: "income",
-  },
-  {
-    id: "2",
-    description: "Aluguel",
-    amount: -1500,
-    category: "Moradia",
-    date: "2024-01-10",
-    type: "expense",
-  },
-  {
-    id: "3",
-    description: "Supermercado",
-    amount: -350,
-    category: "Alimentação",
-    date: "2024-01-08",
-    type: "expense",
-  },
-  {
-    id: "4",
-    description: "Freelance",
-    amount: 800,
-    category: "Freelance",
-    date: "2024-01-05",
-    type: "income",
-  },
-];
 
 export function TransactionList() {
-  const [transactions] = useState<Transaction[]>(mockTransactions);
+  const [dataTransaction, setDataTransaction] = useState<Transaction[]>([]);
+  const {role} = useAuth();
+
+  useEffect(() => {
+    if(!role) return;
+   getAllTransactions();
+  }, [role])
+
+  async function getAllTransactions() {
+      if (role === "ROLE_ADMINISTRATOR") {
+            const  dataAdmin  = await getAllTransactionByAdmin();
+            dataAdmin.reverse();
+            setDataTransaction(dataAdmin.slice(0,4));
+      } else {
+            const  dataCustomer = await getAllTransactionByCustomer();
+            dataCustomer.reverse();
+            setDataTransaction(dataCustomer.slice(0,4));
+      }
+  }
 
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4">Transações Recentes</h3>
       <div className="space-y-2">
-        {transactions.map((transaction) => (
+        {dataTransaction.map((transaction) => (
           <div
             key={transaction.id}
             className="flex items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-secondary/50 hover:bg-secondary transition-smooth"
@@ -67,14 +47,14 @@ export function TransactionList() {
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{transaction.description}</p>
               <p className="hidden sm:block text-sm text-muted-foreground">
-                {new Date(transaction.date).toLocaleDateString("pt-BR")} •{" "}
-                {transaction.category}
+                {new Date(transaction.dateTransaction).toLocaleDateString("pt-BR")} •{" "}
+                {getDescriptionCategory(transaction.category)}
               </p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <span
                 className={`font-semibold whitespace-nowrap text-right ${
-                  transaction.type === "income"
+                  transaction.transactionType === "INCOME"
                     ? "text-success"
                     : "text-destructive"
                 }`}
@@ -85,7 +65,7 @@ export function TransactionList() {
                   currency: "BRL",
                 })}
               </span>
-              <DropdownMenu>
+              {/* <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
@@ -105,7 +85,7 @@ export function TransactionList() {
                     Excluir
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
+              </DropdownMenu> */}
             </div>
           </div>
         ))}
