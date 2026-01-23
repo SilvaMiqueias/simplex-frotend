@@ -26,3 +26,7 @@ export const categoryList:  Array<Category> = [
  export function getDescriptionCategory(name: string){
    return categoryList.find(item => item.name === name).description;
  }
+
+  export function getDescriptionCategoryById(id: number){
+   return categoryList.find(item => item.id === id).description;
+ }

@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { FileX } from "lucide-react";
+import { toast } from "sonner";
+import { useLoading } from "./LoadingContext";
 
 export default function TwoFactor() {
   const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { setLoading, loading } = useLoading();
   const [error, setError] = useState("");
   const { qrCode } = useAuth();
 
   const { verify2FA, logout } = useAuth();
   const navigate = useNavigate();
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,14 +25,10 @@ export default function TwoFactor() {
 
     try {
       setLoading(true);
-
-      /**
-       * Quando o backend estiver pronto,
-       * isso valida o código de verdade
-       */
       await verify2FA(code);
 
       navigate("/dashboard");
+      toast.success('Logado com sucesso!');
     } catch {
       setError("Código inválido");
     } finally {
@@ -39,9 +37,10 @@ export default function TwoFactor() {
   };
 
   return (
-    <div style={{display: "flex", flexDirection: "row", margin: "20px", justifyContent: "center", alignItems: "center"}}>
-       <div style={{ textAlign: "center", padding: 16 }}>
-           <h1 style={{marginBottom: "30px"}}>Escanei o QR code para a autênticação em dois fatores:</h1>
+    <div style={{display: "flex", flexDirection: "column", margin: "20px", justifyContent: "center", alignItems: "center", marginTop: "10%"}}>
+      <div style={{border: "1px solid gray", borderRadius: "5px", padding: "16px", boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.04)"}}>
+           <div style={{ textAlign: "center", padding: 16, display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center" }}>
+           <h1 style={{marginBottom: "30px", fontSize: "20px", fontWeight: 700}}>Escanei o QR code para a autênticação em dois fatores</h1>
             <img
               src={`data:image/png;base64,${qrCode}`}
               alt="QR Code para autenticação em dois fatores"
@@ -50,9 +49,9 @@ export default function TwoFactor() {
             />
         </div>
         <div style={{display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", gap: "10px",  margin: "40px" }}>
-          <h1>Autenticação em dois fatores</h1>
+          <h1 style={{fontWeight: 700}}>Autenticação em dois fatores</h1>
 
-          <p>
+          <p style={{fontWeight: 700}}>
             Digite o código gerado no seu aplicativo autenticador
           </p>
 
@@ -77,7 +76,7 @@ export default function TwoFactor() {
           <button
             type="button"
             onClick={logout}
-            style={{ marginTop: 16 }}
+            style={{ marginTop: 16 , border: "1px solid gray", padding: 8, borderRadius: "5px", width: "120px"}}
           >
             Cancelar
           </button>
@@ -86,6 +85,8 @@ export default function TwoFactor() {
             <p style={{ color: "red", marginTop: 8 }}>{error}</p>
           )}
         </div>
+      </div>
+     
       
     </div>
     

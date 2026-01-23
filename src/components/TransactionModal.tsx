@@ -33,6 +33,7 @@ import { ChevronDownIcon } from "lucide-react"
 import { Transaction } from "@/components/model/transaction";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DayMonthYearPicker } from "./shared/DayMonthYearPicker";
 
 
 interface TransactionModalProps {
@@ -306,63 +307,23 @@ export function TransactionModal({
               />
             </div>
   
-           {/*  <div className="grid gap-2">
-              <Label htmlFor="date">Data</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
-                required
-              />
-            </div> */}
-
+    
             <div className="grid flex flex-col gap-2">
-              <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
                 <Label htmlFor="date">Data</Label>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      id="date"
-                      className="w-full justify-start text-left"
-                    >
-                      {formData.dateTransaction ? formData?.dateTransaction.split('T')[0] : "Selecione uma data"}
-                      <ChevronDownIcon />
-                    </Button>
-                  </PopoverTrigger>
-
-                  <PopoverContent className="overflow-hidden p-0 w-[400px]" align="start">
-                   <Calendar
-                          mode="single"
-                          selected={
-                            formData.dateTransaction
-                              ? parseLocalDate(formData.dateTransaction)
-                              : undefined
-                          }
-                          onSelect={(date) =>
-                            date &&
-                            setFormData({
-                              ...formData,
-                              dateTransaction: date.toISOString()
-                            })
-                          }
-                          className="rounded-md border shadow-sm"
-                          captionLayout="dropdown"
-                          locale={ptBR}
-                          formatters={{
-                            formatCaption: (date) =>
-                              format(date, "MMM yyyy ", { locale: ptBR }),
-
-                            formatWeekdayName: (date) =>
-                              format(date, "eee", { locale: ptBR }),
-
-                  
-                          }}
-                        />
-                  </PopoverContent>
-                </Popover>               
+                <DayMonthYearPicker
+                        value={
+                          formData.dateTransaction
+                            ? new Date(formData.dateTransaction)
+                            : undefined
+                        }
+                        onChange={(date) =>
+                          setFormData({
+                            ...formData,
+                            dateTransaction: date.toISOString(),
+                          })
+                        }
+                   />
+                              
             </div>
 
           </div>

@@ -17,11 +17,13 @@ import NotFound from "./pages/NotFound";
 import { TwoFactorRoute } from "./context/TwoFactorRoute";
 import TwoFactor from "./context/TwoFactor";
 import { ProtectedLayout } from "./context/ProtectedLayout";
+import { LoadingProvider } from "./context/LoadingContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <LoadingProvider>
     <ThemeProvider defaultTheme="system" storageKey="financeapp-theme">
       <TooltipProvider>
         <Toaster />
@@ -63,7 +65,9 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
+   </LoadingProvider>
   </QueryClientProvider>
+
 );
 
 export default App;
