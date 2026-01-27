@@ -425,3 +425,168 @@ Funcionalidade que permite converter valores entre diferentes moedas utilizando 
 | **Loading States** | Indicadores de carregamento durante requisições |
 | **Perfis de Acesso** | Diferenciação entre Admin e Customer |
 | **Swagger UI** | Documentação interativa da API |
+
+---
+
+## 🔧 Implementação e Qualidade do Código
+
+### Estrutura de Arquivos (Frontend)
+
+```
+simplex-frotend/
+├── src/
+│   ├── components/           # Componentes reutilizáveis
+│   │   ├── ui/               # Componentes Shadcn/UI
+│   │   ├── DashboardCard.tsx
+│   │   ├── FinancialChart.tsx
+│   │   ├── TransactionList.tsx
+│   │   ├── TransactionModal.tsx
+│   │   └── ...
+│   ├── context/              # Contextos React
+│   │   ├── AuthContext.tsx   # Gerenciamento de autenticação
+│   │   ├── LoadingContext.tsx
+│   │   └── ProtectedLayout.tsx
+│   ├── hooks/                # Custom hooks
+│   ├── pages/                # Páginas da aplicação
+│   │   ├── Dashboard.tsx
+│   │   ├── Transactions.tsx
+│   │   ├── Budgets.tsx
+│   │   ├── Login.tsx
+│   │   └── ...
+│   ├── services/             # Camada de serviços (API)
+│   │   ├── api.ts
+│   │   ├── transactionsService.ts
+│   │   ├── BudgetService.ts
+│   │   └── ...
+│   ├── lib/                  # Utilitários
+│   └── App.tsx               # Componente raiz
+├── public/                   # Assets estáticos
+├── package.json
+├── tailwind.config.ts
+├── vite.config.ts
+└── tsconfig.json
+```
+
+### Padrões de Código Adotados
+
+#### TypeScript
+- Tipagem explícita em interfaces e funções
+- Uso de `type` para DTOs e `interface` para componentes
+- Strict mode habilitado
+
+#### React
+- Componentes funcionais com hooks
+- Separação de responsabilidades (pages, components, services)
+- Context API para estado global (Auth, Loading, Theme)
+
+#### Nomenclatura
+- **Componentes**: PascalCase (`DashboardCard.tsx`)
+- **Funções**: camelCase (`getAllTransactions`)
+- **Constantes**: UPPER_SNAKE_CASE (`ENDPOINTS_WITH_AUTHENTICATION`)
+- **Arquivos de serviço**: camelCase (`transactionsService.ts`)
+
+### Controle de Versão (Git)
+
+#### Padrão de Commits
+```
+docs: adiciona documentação do projeto
+feat: implementa funcionalidade de login
+fix: corrige validação de formulário
+refactor: reorganiza estrutura de componentes
+style: ajusta espaçamento no dashboard
+```
+
+#### Estrutura do Repositório
+- Branch principal: `master`
+- README.md com documentação completa
+- .gitignore configurado para Node.js
+
+---
+
+## 🚀 Como Executar o Projeto
+
+### Pré-requisitos
+
+- Node.js 18+ e npm/bun
+- Java 17+
+- PostgreSQL 14+
+- Git
+
+### Frontend
+
+```bash
+# Clonar repositório
+git clone https://github.com/SilvaMiqueias/simplex-frotend.git
+cd simplex-frotend
+
+# Instalar dependências
+npm install
+# ou
+bun install
+
+# Executar em desenvolvimento
+npm run dev
+# ou
+bun dev
+
+# Acessar em http://localhost:5173
+```
+
+### Backend
+
+```bash
+# Clonar repositório
+git clone https://github.com/SilvaMiqueias/simplex-backend.git
+cd simplex-backend
+
+# Configurar banco de dados
+# Criar database 'financial' no PostgreSQL
+
+# Configurar application.properties
+# spring.datasource.url=jdbc:postgresql://localhost:5432/financial
+# spring.datasource.username=seu_usuario
+# spring.datasource.password=sua_senha
+
+# Executar
+./gradlew bootRun
+
+# API disponível em http://localhost:8080
+# Swagger UI em http://localhost:8080/swagger-ui.html
+```
+
+### Variáveis de Ambiente
+
+#### Backend (application.properties)
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/financial
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.jpa.hibernate.ddl-auto=validate
+spring.flyway.enabled=true
+jwt.secret=sua-chave-secreta-aqui
+```
+
+#### Frontend
+```typescript
+// src/services/api.ts
+export const api = axios.create({
+  baseURL: "http://localhost:8080",
+});
+```
+
+---
+
+## 📚 Referências
+
+- [React Documentation](https://react.dev/)
+- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
+- [TailwindCSS](https://tailwindcss.com/)
+- [Shadcn/UI](https://ui.shadcn.com/)
+- [Frankfurter API](https://www.frankfurter.app/)
+- [JWT.io](https://jwt.io/)
+
+---
+
+## 📄 Licença
+
+Este projeto foi desenvolvido para fins acadêmicos como parte da disciplina de Programação para Internet do IFG.
