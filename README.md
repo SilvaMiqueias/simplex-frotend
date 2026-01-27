@@ -197,3 +197,231 @@ O Simplex foi desenvolvido para resolver os seguintes desafios:
 - **Performance**: Otimizado para consultas complexas
 - **Extensibilidade**: Suporte a tipos de dados avançados
 - **Open Source**: Sem custos de licenciamento
+
+---
+
+## ⚡ Funcionalidades Implementadas
+
+### 1. Sistema de Autenticação e Autorização
+
+**Descrição e Objetivo**  
+Sistema completo de autenticação com suporte a JWT (JSON Web Tokens) e autenticação de dois fatores (MFA) via Google Authenticator. O sistema possui dois perfis de acesso: Administrador e Cliente.
+
+**Fluxo de Execução**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         FLUXO DE LOGIN                                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. Usuário acessa /login                                                │
+│  2. Preenche email e senha                                               │
+│  3. Frontend envia POST /auth/users/login-customer                       │
+│  4. Backend valida credenciais (BCrypt)                                  │
+│  5. Se MFA habilitado:                                                   │
+│     → Retorna token temporário + status "MFA_REQUIRED"                   │
+│     → Usuário é redirecionado para /2fa                                  │
+│     → Insere código do Google Authenticator                              │
+│     → POST /auth/users/mfa/verify                                        │
+│     → Backend valida TOTP e retorna JWT definitivo                       │
+│  6. Se MFA não habilitado:                                               │
+│     → Retorna JWT diretamente                                            │
+│  7. Frontend armazena token e redireciona para /dashboard                │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Tecnologias Envolvidas**
+- Spring Security (configuração de endpoints protegidos)
+- BCryptPasswordEncoder (hash de senhas)
+- java-jwt (geração e validação de tokens)
+- Google Authenticator Library (TOTP)
+- ZXing (geração de QR Code para setup MFA)
+
+---
+
+### 2. CRUD de Transações Financeiras
+
+**Descrição e Objetivo**  
+Funcionalidade central do sistema que permite aos usuários registrar, visualizar, editar e excluir suas transações financeiras (receitas e despesas), com categorização e filtros.
+
+**Fluxo de Execução**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CRIAR NOVA TRANSAÇÃO                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. Usuário clica em "Nova Transação" na página /transactions            │
+│  2. Modal abre com formulário (React Hook Form + Zod validation)         │
+│  3. Preenche: tipo, categoria, valor, descrição, data, método pagamento  │
+│  4. Clica em "Salvar"                                                    │
+│  5. Frontend envia POST /api/v1/customer/transaction/create              │
+│     → Header: Authorization: Bearer {jwt}                                │
+│     → Body: { transactionType, category, amount, description, ... }      │
+│  6. Backend:                                                             │
+│     → Valida token JWT                                                   │
+│     → Extrai usuário do token                                            │
+│     → TransactionService.createTransaction()                             │
+│     → Salva no PostgreSQL via TransactionRepository                      │
+│  7. Retorna TransactionDTO com dados salvos                              │
+│  8. Frontend atualiza lista (React Query invalidation)                   │
+│  9. Toast de sucesso exibido                                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    LISTAR E FILTRAR TRANSAÇÕES                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. Usuário acessa /transactions                                         │
+│  2. useEffect dispara GET /api/v1/customer/transaction/find-all          │
+│  3. Backend retorna lista de TransactionDTO do usuário                   │
+│  4. Frontend renderiza tabela com dados                                  │
+│  5. Usuário pode filtrar por:                                            │
+│     → Busca textual (descrição)                                          │
+│     → Tipo (Receita/Despesa)                                             │
+│     → Categoria                                                          │
+│  6. Filtros aplicados em tempo real no frontend                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Tecnologias Envolvidas**
+- React Hook Form + Zod (validação de formulários)
+- React Query (cache e sincronização)
+- Axios (requisições HTTP)
+- Spring Data JPA (persistência)
+- MapStruct (conversão Entity ↔ DTO)
+
+---
+
+### 3. Gerenciamento de Orçamentos
+
+**Descrição e Objetivo**  
+Permite aos usuários definir limites de gastos mensais por categoria, acompanhando visualmente o consumo do orçamento através de gráficos.
+
+**Fluxo de Execução**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CRIAR ORÇAMENTO MENSAL                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. Usuário acessa /budgets                                              │
+│  2. Clica em "Novo Orçamento"                                            │
+│  3. Preenche: categoria, valor limite, descrição, mês de referência      │
+│  4. POST /api/v1/customer/budget/create                                  │
+│  5. Backend salva Budget vinculado ao usuário                            │
+│  6. Página exibe gráfico comparando orçamento vs gastos reais            │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Tecnologias Envolvidas**
+- Recharts (visualização de gráficos)
+- BudgetService + BudgetRepository (lógica de negócio)
+- BudgetMapper (conversão de dados)
+
+---
+
+### 4. Definição e Acompanhamento de Metas
+
+**Descrição e Objetivo**  
+Funcionalidade que permite aos usuários estabelecer metas financeiras com prazo definido, acompanhando o progresso ao longo do tempo.
+
+**Fluxo de Execução**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       CRIAR META FINANCEIRA                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. Usuário define meta (ex: "Economizar R$ 5.000 até dezembro")         │
+│  2. Preenche: categoria, valor alvo, descrição, data início/fim          │
+│  3. POST /api/v1/customer/goal/create                                    │
+│  4. Backend salva Goal com período definido                              │
+│  5. Dashboard exibe progresso da meta                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Tecnologias Envolvidas**
+- GoalService + GoalRepository
+- React Day Picker (seleção de datas)
+- Progress components (visualização de progresso)
+
+---
+
+### 5. Dashboard com Visualização de Dados
+
+**Descrição e Objetivo**  
+Tela principal que apresenta visão consolidada das finanças do usuário através de cards informativos, gráficos de evolução e lista de transações recentes.
+
+**Fluxo de Execução**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      CARREGAR DASHBOARD                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. Usuário acessa /dashboard                                            │
+│  2. Componente Dashboard.tsx monta                                       │
+│  3. useEffect verifica role do usuário (ADMIN ou CUSTOMER)               │
+│  4. Chama getAllCardCustomer() ou getAllCardAdmin()                      │
+│  5. GET /api/v1/customer/dashboard/infos-cards                           │
+│  6. Backend DashboardService calcula:                                    │
+│     → Total de receitas do mês atual                                     │
+│     → Total de despesas do mês atual                                     │
+│     → Saldo (receitas - despesas)                                        │
+│     → Comparativo com mês anterior (%)                                   │
+│  7. GET /api/v1/customer/dashboard/infos-charts                          │
+│  8. Backend retorna dados para gráficos de evolução                      │
+│  9. Frontend renderiza:                                                  │
+│     → 3 DashboardCards (Receitas, Despesas, Saldo)                       │
+│     → FinancialChart (gráfico de barras)                                 │
+│     → TrendChart (gráfico de tendência)                                  │
+│     → TransactionList (últimas transações)                               │
+│     → CurrencyRates (cotações de moedas)                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Tecnologias Envolvidas**
+- Recharts (gráficos de barras e linha)
+- DashboardService (agregação de dados)
+- React Query (cache de dados)
+- Componentes Shadcn/UI (cards, tabelas)
+
+---
+
+### 6. Conversão de Moedas (Integração com API Externa)
+
+**Descrição e Objetivo**  
+Funcionalidade que permite converter valores entre diferentes moedas utilizando taxas de câmbio obtidas da API Frankfurter.
+
+**Fluxo de Execução**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      CONVERTER MOEDAS                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│  1. Usuário acessa /currency-converter                                   │
+│  2. Seleciona moeda de origem (ex: BRL)                                  │
+│  3. Seleciona moeda de destino (ex: USD)                                 │
+│  4. Digita valor a converter                                             │
+│  5. Frontend calcula conversão usando taxas pré-carregadas               │
+│  6. Exibe resultado e taxa de câmbio                                     │
+│                                                                          │
+│  [Backend - Atualização de Cotações]                                     │
+│  → CurrencyService.getRates()                                            │
+│  → GET https://api.frankfurter.dev/v1/{date}..{date}?base=BRL            │
+│  → Retorna cotações do dia útil anterior                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Tecnologias Envolvidas**
+- RestTemplate (chamadas HTTP para API externa)
+- Frankfurter API (https://api.frankfurter.dev)
+- React Select components (seleção de moedas)
+
+---
+
+### Funcionalidades Extras (Bônus)
+
+| Funcionalidade | Descrição |
+|----------------|-----------|
+| **Tema Claro/Escuro** | Toggle entre temas com persistência (ThemeProvider) |
+| **Design Responsivo** | Interface adaptável para desktop e mobile |
+| **Toast Notifications** | Feedback visual para ações do usuário (Sonner) |
+| **Loading States** | Indicadores de carregamento durante requisições |
+| **Perfis de Acesso** | Diferenciação entre Admin e Customer |
+| **Swagger UI** | Documentação interativa da API |
