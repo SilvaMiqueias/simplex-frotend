@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRightLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,20 +11,79 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { getRawRates } from "@/services/currencyService";
+import { useLoading } from "@/context/LoadingContext";
+import { toast } from "sonner";
 
-const currencies = [
-  { code: "BRL", name: "Real Brasileiro", rate: 1 },
-  { code: "USD", name: "Dólar Americano", rate: 5.12 },
-  { code: "EUR", name: "Euro", rate: 5.45 },
-  { code: "GBP", name: "Libra Esterlina", rate: 6.28 },
-  { code: "JPY", name: "Iene Japonês", rate: 0.038 },
-  { code: "ARS", name: "Peso Argentino", rate: 0.0054 },
-];
+interface Currency {
+  code: string;
+  name: string;
+  rate: number;
+}
+
+const currencyNames: { [key: string]: string } = {
+  BRL: "Real Brasileiro",
+  USD: "Dólar Americano",
+  EUR: "Euro",
+  GBP: "Libra Esterlina",
+  JPY: "Iene Japonês",
+  AUD: "Dólar Australiano",
+  CAD: "Dólar Canadense",
+  CHF: "Franco Suíço",
+};
 
 export default function CurrencyConverter() {
   const [amount, setAmount] = useState<string>("100");
   const [fromCurrency, setFromCurrency] = useState<string>("BRL");
   const [toCurrency, setToCurrency] = useState<string>("USD");
+  const [currencies, setCurrencies] = useState<Currency[]>([
+    { code: "BRL", name: "Real Brasileiro", rate: 1 },
+  ]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { setLoading: setGlobalLoading } = useLoading();
+
+  useEffect(() => {
+    loadRates();
+  }, []);
+
+  async function loadRates() {
+    setIsLoading(true);
+    setGlobalLoading(true);
+    try {
+      const data = await getRawRates();
+      const currencyList: Currency[] = [
+        { code: "BRL", name: "Real Brasileiro", rate: 1 },
+      ];
+
+      if (data.rates) {
+        const mainCodes = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF"];
+        for (const code of mainCodes) {
+          const rate = (data.rates as any)[code.toLowerCase()] || (data.rates as any)[code];
+          if (rate !== undefined) {
+            currencyList.push({
+              code,
+              name: currencyNames[code] || code,
+              rate: rate,
+            });
+          }
+        }
+      }
+
+      setCurrencies(currencyList);
+    } catch (error) {
+      toast.error("Erro ao carregar cotações. Usando valores padrão.");
+      setCurrencies([
+        { code: "BRL", name: "Real Brasileiro", rate: 1 },
+        { code: "USD", name: "Dólar Americano", rate: 0.17 },
+        { code: "EUR", name: "Euro", rate: 0.16 },
+        { code: "GBP", name: "Libra Esterlina", rate: 0.13 },
+        { code: "JPY", name: "Iene Japonês", rate: 26.5 },
+      ]);
+    } finally {
+      setIsLoading(false);
+      setGlobalLoading(false);
+    }
+  }
 
   const getRate = (code: string) => {
     return currencies.find((c) => c.code === code)?.rate || 1;
@@ -65,7 +124,7 @@ export default function CurrencyConverter() {
       <div>
         <h1 className="text-3xl font-bold">Conversão de Moedas</h1>
         <p className="text-muted-foreground">
-          Converta valores entre diferentes moedas
+          Converta valores entre diferentes moedas (cotações em tempo real)
         </p>
       </div>
 
@@ -83,9 +142,7 @@ export default function CurrencyConverter() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Converter Stack with centered swap button */}
             <div className="relative py-2">
-              {/* From Currency */}
               <div className="space-y-2">
                 <Label>De</Label>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -111,17 +168,6 @@ export default function CurrencyConverter() {
                 </div>
               </div>
 
-              {/* Swap Button - perfectly centered between sections */}
-              {/* <Button
-                variant="outline"
-                size="icon"
-                onClick={swapCurrencies}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full z-10"
-              >
-                <ArrowRightLeft className="h-4 w-4" />
-              </Button> */}
-
-              {/* To Currency */}
               <div className="space-y-2 mt-5">
                 <Label>Para</Label>
                 <Select value={toCurrency} onValueChange={setToCurrency}>
@@ -139,7 +185,6 @@ export default function CurrencyConverter() {
               </div>
             </div>
 
-            {/* Result */}
             <div className="pt-4 border-t">
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Resultado</p>
@@ -155,14 +200,13 @@ export default function CurrencyConverter() {
           </CardContent>
         </Card>
 
-        {/* Exchange Rate Table */}
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle>Tabela de Taxas</CardTitle>
+            <CardTitle>Tabela de Taxas (API Frankfurter)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-2">
-              {currencies.map((currency) => (
+              {currencies.filter(c => c.code !== "BRL").map((currency) => (
                 <div
                   key={currency.code}
                   className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
