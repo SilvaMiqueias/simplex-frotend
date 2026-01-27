@@ -3,6 +3,7 @@ import { DashboardCard } from "@/components/DashboardCard";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialChart, TrendChart } from "@/components/FinancialChart";
 import { CurrencyRates } from "@/components/CurrencyRates";
+import { FinancialProjections } from "@/components/FinancialProjections";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -132,8 +133,11 @@ export default function Dashboard() {
         <div className="lg:col-span-2 apple-card p-6">
           <TransactionList />
         </div>
-        <div className="apple-card p-6">
-          <CurrencyRates />
+        <div className="space-y-6">
+          <div className="apple-card p-6">
+            <CurrencyRates />
+          </div>
+          <FinancialProjections />
         </div>
       </div>
     </div>
