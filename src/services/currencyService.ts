@@ -1,4 +1,4 @@
-import { api } from "./api";
+import api from "./api";
 
 export interface RatesResponse {
   base: string;
@@ -48,7 +48,7 @@ const currencyNames: { [key: string]: string } = {
 };
 
 export async function getCurrencyRates(): Promise<CurrencyRate[]> {
-  const response = await api.get<RatesResponse>("/api/v1/currency/rates-with-variation");
+  const response = await api.get<RatesResponse>("/currency/rates-with-variation");
   const data = response.data;
   
   const rates: CurrencyRate[] = [];
@@ -79,7 +79,45 @@ export async function getCurrencyRates(): Promise<CurrencyRate[]> {
   return rates;
 }
 
+export async function getRatesWithVariation(): Promise<CurrencyRate[]> {
+  try {
+    return await getCurrencyRates();
+  } catch (error) {
+    // Fallback: tenta API externa diretamente
+    const response = await fetch("https://api.frankfurter.dev/v1/latest?base=BRL");
+    const data = await response.json();
+    
+    const rates: CurrencyRate[] = [];
+    const mainCurrencies = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD"];
+    
+    for (const code of mainCurrencies) {
+      const rate = data.rates?.[code];
+      if (rate !== undefined) {
+        rates.push({
+          code,
+          name: currencyNames[code] || code,
+          rate,
+          change: 0,
+        });
+      }
+    }
+    
+    return rates;
+  }
+}
+
 export async function getRawRates(): Promise<RatesResponse> {
-  const response = await api.get<RatesResponse>("/api/v1/currency/rates-with-variation");
-  return response.data;
+  try {
+    const response = await api.get<RatesResponse>("/currency/rates-with-variation");
+    return response.data;
+  } catch (error) {
+    // Fallback: API externa diretamente
+    const response = await fetch("https://api.frankfurter.dev/v1/latest?base=BRL");
+    const data = await response.json();
+    return {
+      base: "BRL",
+      date: data.date,
+      rates: data.rates,
+    };
+  }
 }
