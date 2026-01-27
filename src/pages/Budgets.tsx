@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
 import { Budget, BudgetChart } from "@/components/model/budget";
-import { Goal } from "@/components/model/goal";
+import { Goal, GoalDisplay } from "@/components/model/goal";
 import { BudgetModal } from "@/components/BudgetModal";
 import { GoalModal } from "@/components/GoalModal";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Plus, Search, Filter, Trash2, Pencil, MoreVertical } from "lucide-react
 import { useLoading } from "@/context/LoadingContext";
 import { useAuth } from "@/context/AuthContext";
 import { findAllBudgets, requestCreateBudget, requestUpdateBudget } from "@/services/BudgetService";
+import { findAllGoals, createGoal as createGoalApi, updateGoal as updateGoalApi, deleteGoal as deleteGoalApi } from "@/services/GoalService";
 import { toast } from "sonner";
 import { getDescriptionCategory, getDescriptionCategoryById } from "@/components/model/category";
 import { MonthYearPicker } from "@/components/shared/MonthYearPicker";
@@ -51,21 +52,6 @@ const mockBudgets = [
   },
 ];
 
-const mockGoals = [
-  {
-    title: "Fundo de Emergência",
-    target: 10000,
-    current: 6500,
-    percentage: 65,
-  },
-  {
-    title: "Viagem de Férias",
-    target: 5000,
-    current: 2800,
-    percentage: 56,
-  },
-];
-
 export default function Budgets() {
 const [reload, setReload] = useState(0);
 const { setLoading } = useLoading();
@@ -80,11 +66,13 @@ const [editingBudget, setEditingBudget] = useState<Budget | undefined>();
 const [editingGoal, setEditingGoal] = useState<Goal | undefined>();
 
 const [dataBudget, setDataBudget] = useState<BudgetChart[]>([]);
+const [dataGoals, setDataGoals] = useState<GoalDisplay[]>([]);
 
 
 useEffect(() => {
       if (!role) return;
         getAllBudgets();
+        getAllGoals();
   }, [role, reload]);
 
 
@@ -95,6 +83,27 @@ async function getAllBudgets() {
           const  result = await findAllBudgets({referenceDate: dateReference.split("T")[0]});
           result.reverse();
           setDataBudget(result);
+    }
+}
+
+async function getAllGoals() {
+    if (role === "ROLE_ADMINISTRATOR") {
+          setDataGoals([]);
+    } else {
+      try {
+          const goals = await findAllGoals();
+          const goalsDisplay: GoalDisplay[] = goals.map(goal => ({
+            ...goal,
+            title: goal.description || getDescriptionCategoryById(goal.category),
+            target: goal.amount,
+            current: 0, // TODO: calcular progresso baseado em transações
+            percentage: 0
+          }));
+          setDataGoals(goalsDisplay);
+      } catch (error) {
+          console.error("Erro ao carregar metas:", error);
+          setDataGoals([]);
+      }
     }
 }  
  
@@ -136,6 +145,41 @@ async function updateBudget(budget: Budget) {
 
 
 async function  handleGoalSave(goal: Goal)  {
+  setLoading(true);
+  try {
+    if (editingGoal?.id) {
+      await updateGoalApi({ ...goal, id: editingGoal.id });
+      toast.success("Meta atualizada com sucesso!");
+    } else {
+      await createGoalApi(goal);
+      toast.success("Meta criada com sucesso!");
+    }
+    setGoalModalOpen(false);
+    setEditingGoal(undefined);
+    setReload((prev) => prev + 1);
+  } catch (error) {
+    toast.error("Ocorreu um erro ao salvar a meta!");
+  } finally {
+    setLoading(false);
+  }
+}
+
+const handleGoalEdit = (goal: GoalDisplay) => {
+  setEditingGoal(goal);
+  setGoalModalOpen(true);
+};
+
+async function handleGoalDelete(id: number) {
+  setLoading(true);
+  try {
+    await deleteGoalApi(id);
+    toast.success("Meta excluída com sucesso!");
+    setReload((prev) => prev + 1);
+  } catch (error) {
+    toast.error("Ocorreu um erro ao excluir a meta!");
+  } finally {
+    setLoading(false);
+  }
 } 
 
 async function getInfosByMonth(isoDate: string) {
@@ -304,35 +348,69 @@ return (
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Metas de Economia</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          {mockGoals.map((goal) => (
-            <Card key={goal.title} className="shadow-soft">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">{goal.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    R$ {goal.current.toFixed(2)} de R$ {goal.target.toFixed(2)}
-                  </span>
-                  <span className="text-primary font-medium">
-                    {goal.percentage}%
-                  </span>
-                </div>
-                <Progress
-                  value={goal.percentage}
-                  className="h-2"
-                  indicatorClassName="bg-primary"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Faltam R$ {(goal.target - goal.current).toFixed(2)} para
-                  atingir sua meta
-                </p>
+          {dataGoals.length === 0 ? (
+            <Card className="shadow-soft col-span-2">
+              <CardContent className="py-8 text-center text-muted-foreground">
+                Nenhuma meta cadastrada. Clique em "Nova Meta" para criar.
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            dataGoals.map((goal) => (
+              <Card key={goal.id || goal.title} className="shadow-soft">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">{goal.title}</CardTitle>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuItem onClick={() => handleGoalEdit(goal)} className="rounded-lg">
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => goal.id && handleGoalDelete(goal.id)} 
+                          className="text-destructive rounded-lg"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      R$ {goal.current.toFixed(2)} de R$ {goal.target.toFixed(2)}
+                    </span>
+                    <span className="text-primary font-medium">
+                      {goal.percentage}%
+                    </span>
+                  </div>
+                  <Progress
+                    value={goal.percentage}
+                    className="h-2"
+                    indicatorClassName="bg-primary"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Faltam R$ {(goal.target - goal.current).toFixed(2)} para
+                    atingir sua meta
+                  </p>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </div>
