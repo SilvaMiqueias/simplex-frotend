@@ -92,13 +92,19 @@ async function getAllGoals() {
     } else {
       try {
           const goals = await findAllGoals();
-          const goalsDisplay: GoalDisplay[] = goals.map(goal => ({
-            ...goal,
-            title: goal.description || getDescriptionCategoryById(goal.category),
-            target: goal.amount,
-            current: 0, // TODO: calcular progresso baseado em transações
-            percentage: 0
-          }));
+          const goalsDisplay: GoalDisplay[] = goals.map(goal => {
+            const current = goal.currentAmount || 0;
+            const target = goal.amount || 0;
+            const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+            
+            return {
+              ...goal,
+              title: goal.description || getDescriptionCategoryById(goal.category),
+              target,
+              current,
+              percentage
+            };
+          });
           setDataGoals(goalsDisplay);
       } catch (error) {
           console.error("Erro ao carregar metas:", error);

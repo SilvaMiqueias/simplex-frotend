@@ -4,6 +4,7 @@ import { TransactionList } from "@/components/TransactionList";
 import { FinancialChart, TrendChart } from "@/components/FinancialChart";
 import { CurrencyRates } from "@/components/CurrencyRates";
 import { FinancialProjections } from "@/components/FinancialProjections";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -85,6 +86,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Notifications */}
+      <NotificationCenter />
+
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

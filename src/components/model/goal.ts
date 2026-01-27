@@ -2,6 +2,7 @@ export interface Goal {
   id?: number;
   category: string;
   amount: number;
+  currentAmount?: number;
   description?: string;
   dateStart?: string;
   dateEnd?: string;

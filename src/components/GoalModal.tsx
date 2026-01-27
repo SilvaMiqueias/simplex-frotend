@@ -85,6 +85,29 @@ export function GoalModal({
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>Data Início (opcional)</Label>
+              <Input
+                type="date"
+                value={formData.dateStart ? formData.dateStart.split("T")[0] : ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, dateStart: e.target.value ? new Date(e.target.value).toISOString() : undefined })
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Data Fim (opcional)</Label>
+              <Input
+                type="date"
+                value={formData.dateEnd ? formData.dateEnd.split("T")[0] : ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, dateEnd: e.target.value ? new Date(e.target.value).toISOString() : undefined })
+                }
+              />
+            </div>
+          </div>
+
           <div className="grid gap-2">
             <Label>Descrição (opcional)</Label>
             <Textarea
