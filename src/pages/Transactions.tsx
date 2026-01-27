@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Filter, Trash2, Pencil } from "lucide-react";
+import { Plus, Search, Filter, Trash2, Pencil, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -48,6 +49,8 @@ export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterDateStart, setFilterDateStart] = useState<string>("");
+  const [filterDateEnd, setFilterDateEnd] = useState<string>("");
   const { role } = useAuth();
   const [dataTransaction, setDataTransaction] = useState<Transaction[]>([]);
   const { setLoading } = useLoading();
@@ -80,8 +83,33 @@ export default function Transactions() {
     const matchesType = filterType === "all" || transaction.transactionType === filterType;
     const matchesCategory =
       filterCategory === "all" || transaction.category === filterCategory;
-    return matchesSearch && matchesType && matchesCategory;
+    
+    // Filtro por data
+    const transactionDate = new Date(transaction.dateTransaction);
+    let matchesDateStart = true;
+    let matchesDateEnd = true;
+    
+    if (filterDateStart) {
+      const startDate = new Date(filterDateStart);
+      matchesDateStart = transactionDate >= startDate;
+    }
+    
+    if (filterDateEnd) {
+      const endDate = new Date(filterDateEnd);
+      endDate.setHours(23, 59, 59, 999);
+      matchesDateEnd = transactionDate <= endDate;
+    }
+    
+    return matchesSearch && matchesType && matchesCategory && matchesDateStart && matchesDateEnd;
   });
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterType("all");
+    setFilterCategory("all");
+    setFilterDateStart("");
+    setFilterDateEnd("");
+  };
 
   async function  handleSave(transaction: Transaction)  {
     setLoading(true);
@@ -164,10 +192,15 @@ export default function Transactions() {
 
       <Card className="shadow-soft">
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Filtros</CardTitle>
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              Limpar filtros
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -200,6 +233,22 @@ export default function Transactions() {
                 ))}
               </SelectContent>
             </Select>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Data Início</Label>
+              <Input
+                type="date"
+                value={filterDateStart}
+                onChange={(e) => setFilterDateStart(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Data Fim</Label>
+              <Input
+                type="date"
+                value={filterDateEnd}
+                onChange={(e) => setFilterDateEnd(e.target.value)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
