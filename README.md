@@ -41,3 +41,32 @@ Fornecer uma ferramenta prática e visual para que usuários possam:
 | **Banco de Dados** | PostgreSQL com Flyway (migrations) |
 | **Autenticação** | JWT + MFA (Google Authenticator) |
 | **Documentação API** | Swagger/OpenAPI |
+
+---
+
+## 📖 Introdução
+
+### Contexto do Projeto
+
+No cenário econômico atual, o controle financeiro pessoal tornou-se uma habilidade essencial. Muitas pessoas enfrentam dificuldades em organizar suas finanças, resultando em gastos excessivos, falta de planejamento e dificuldade em atingir objetivos financeiros. A ausência de ferramentas adequadas para visualização e controle de receitas e despesas contribui significativamente para esse problema.
+
+### Problema que o Sistema Busca Resolver
+
+O Simplex foi desenvolvido para resolver os seguintes desafios:
+
+1. **Desorganização Financeira**: Dificuldade em categorizar e acompanhar gastos diários
+2. **Falta de Visibilidade**: Ausência de dashboards e gráficos que mostrem o panorama financeiro
+3. **Planejamento Deficiente**: Dificuldade em estabelecer e acompanhar orçamentos mensais
+4. **Metas não Atingidas**: Falta de ferramentas para definir e monitorar objetivos de economia
+5. **Segurança**: Necessidade de proteção adequada para dados financeiros sensíveis
+
+### Objetivos Específicos
+
+| Objetivo | Descrição |
+|----------|-----------|
+| **Gerenciamento de Transações** | Permitir o registro, edição e exclusão de receitas e despesas com categorização |
+| **Controle de Orçamentos** | Possibilitar a definição de limites de gastos por categoria |
+| **Acompanhamento de Metas** | Oferecer ferramentas para criação e monitoramento de objetivos financeiros |
+| **Visualização de Dados** | Apresentar gráficos e relatórios intuitivos sobre a saúde financeira |
+| **Autenticação Segura** | Implementar login com JWT e autenticação de dois fatores (MFA) |
+| **Conversão de Moedas** | Integrar API externa para conversão entre diferentes moedas |
