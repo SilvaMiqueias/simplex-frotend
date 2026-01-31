@@ -12,6 +12,8 @@ export class BudgetChart {
   amount?: number = 0;
   spentAmount?: number = 0;
   remainingAmount?: number = 0;
+  dateReference?: string = new Date().toISOString();
+  description?: string;
 }
 
 export interface BudgetResultDTO{

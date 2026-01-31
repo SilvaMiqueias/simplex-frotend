@@ -20,5 +20,10 @@ export async function getAllChartAdmin(){
      const { data } = await api.get("api/v1/admin/dashboard/infos-charts", {});
      return data;
  }
+
+export async function getAllRates(){
+     const { data } = await api.get("api/v1/public/find-all-rates", {});
+     return data;
+ }
  
  

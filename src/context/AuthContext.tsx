@@ -8,6 +8,7 @@ import {
 import { api } from "../services/api";
 import { mfaApi } from "../services/mfaApi";
 import { setupAuthInterceptors } from "../services/setupInterceptors";
+import { UserDetail } from "@/components/model/user";
 
 /* =====================
    TIPOS
@@ -26,10 +27,12 @@ type AuthContextType = {
   tempToken: string | null;
   qrCode: string;
   role: string;
+  email: string;
   createUserCustomer: (name: string, username: string, password: string) => Promise<void>;
   loginWithPassword: (username: string, password: string) => Promise<void>;
   verify2FA: (code: string) => Promise<void>;
   logout: () => void;
+  getUser: (email: string) => Promise<UserDetail>;
 };
 
 
@@ -49,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useState<string | null>(null);
      const [role, setRole] =
     useState<string | null>(null);
+       const [email, setEmail] =
+    useState<string | null>(null);
 
 
   useEffect(() => {
@@ -58,6 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }, [token, tempToken]);
 
+
+  async function getUser(email: string) {
+     const { data } = await api.get("/auth/users/get-user", {params: {email}});
+     return data;
+    }
 
 
   async function createUserCustomer(
@@ -85,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     //seta a role
     setRole(data.role);
-    console.log(role);
+    setEmail(username);
 
     /**
      * Possíveis respostas do backend:
@@ -149,10 +159,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tempToken,
         qrCode,
         role,
+        email,
         createUserCustomer,
         loginWithPassword,
         verify2FA,
         logout,
+        getUser
       }}
     >
       {children}

@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Plus, Search, Filter, Trash2, Pencil, MoreVertical } from "lucide-react";
 import { useLoading } from "@/context/LoadingContext";
 import { useAuth } from "@/context/AuthContext";
-import { findAllBudgets, requestCreateBudget, requestUpdateBudget } from "@/services/BudgetService";
+import { findAllBudgets, findAllGoals, requestCreateBudget, requestCreateGoal, requestDeleteBudget, requestDeleteGoal, requestUpdateBudget, requestUpdateGoal } from "@/services/BudgetService";
 import { toast } from "sonner";
-import { getDescriptionCategory, getDescriptionCategoryById } from "@/components/model/category";
+import { getDescriptionCategory, getDescriptionCategoryById, getNameCategoryById } from "@/components/model/category";
 import { MonthYearPicker } from "@/components/shared/MonthYearPicker";
 import {
   DropdownMenu,
@@ -21,6 +21,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 
@@ -79,12 +90,20 @@ const [goalModalOpen, setGoalModalOpen] = useState(false);
 const [editingBudget, setEditingBudget] = useState<Budget | undefined>();
 const [editingGoal, setEditingGoal] = useState<Goal | undefined>();
 
+const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
+const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
+
+
 const [dataBudget, setDataBudget] = useState<BudgetChart[]>([]);
+const [dataGoal, setDataGoal] = useState<Goal[]>([]);
+
 
 
 useEffect(() => {
       if (!role) return;
         getAllBudgets();
+        getAllGoals();
   }, [role, reload]);
 
 
@@ -95,6 +114,16 @@ async function getAllBudgets() {
           const  result = await findAllBudgets({referenceDate: dateReference.split("T")[0]});
           result.reverse();
           setDataBudget(result);
+    }
+}  
+
+async function getAllGoals() {
+    if (role === "ROLE_ADMINISTRATOR") {
+          setDataGoal([]);
+    } else {
+          const  result = await findAllGoals({referenceDate: dateReference.split("T")[0]});
+          result.reverse();
+          setDataGoal(result);
     }
 }  
  
@@ -123,7 +152,6 @@ async function  handleBudgetSave(budget: Budget)  {
   }
  
 } 
-
 async function createBudget(budget: Budget) {
     await requestCreateBudget(budget);
     toast.success("Orçamento criado com sucesso!");
@@ -134,9 +162,91 @@ async function updateBudget(budget: Budget) {
     toast.success("Orçamento editado com sucesso!");
 }
 
+const openDeleteDialog = (budget: Budget) => {
+    setBudgetToDelete(budget);
+    setIsDeleteOpen(true);
+};
+
+async function handleDeleteBudget(id: number){
+   setLoading(true);
+   try{
+    await requestDeleteBudget(id);
+    toast.success('Orçamento excluído com sucesso!');
+    setReload((prev) => prev + 1);
+   }catch(erro){
+      toast.error('Ocorreu um erro ao excluir a orçamento!');    
+   }finally{
+    setLoading(false);
+   }
+};
+
+const confirmDeleteBudget = () => {
+    if (budgetToDelete) {
+      handleDeleteBudget(Number(budgetToDelete.id));
+    }
+    setIsDeleteOpen(false);
+    setBudgetToDelete(null);
+};
+
+function transformToBudget(chart: BudgetChart): Budget{
+   let budget = new Budget();
+   budget.id = chart.id;
+   budget.amount = chart.amount;
+   budget.category =  getNameCategoryById(chart.category);
+   budget.dateReference = chart.dateReference;
+   budget.description = chart.description
+   return budget;
+}
+
 
 async function  handleGoalSave(goal: Goal)  {
+   setLoading(true);
+  try{
+    if(editingBudget){
+       await updateGoal(goal);
+    }else{
+      await createGoal(goal);
+    }
+    
+    setGoalModalOpen(false);
+    setEditingGoal(undefined)
+    setReload((prev) => prev + 1)
+
+  }catch(error){
+      toast.error('Ocorreu um erro!')
+  }finally{
+    setLoading(false);
+  }
 } 
+
+async function createGoal(goal: Goal) {
+    await requestCreateGoal(goal);
+    toast.success("Meta criada com sucesso!");
+}
+
+async function updateGoal(goal: Goal) {
+    await requestUpdateGoal(goal);
+    toast.success("Meta editada com sucesso!");
+}
+
+const openDeleteDialogGoal = (goal: Goal) => {
+    setGoalToDelete(goal);
+    setIsDeleteOpen(true);
+};
+
+async function handleDeleteGoal(id: number){
+   setLoading(true);
+   try{
+    await requestDeleteGoal(id);
+    toast.success('Meta excluída com sucesso!');
+    setReload((prev) => prev + 1);
+   }catch(erro){
+      toast.error('Ocorreu um erro ao excluir a meta!');    
+   }finally{
+    setLoading(false);
+   }
+};
+
 
 async function getInfosByMonth(isoDate: string) {
     setReload((prev) => prev + 1)
@@ -233,7 +343,7 @@ return (
               <CardHeader>
                 <div style={{display: "flex", justifyContent: "space-between"}}>
                     <CardTitle className="text-lg">{getDescriptionCategoryById(budget.category)}</CardTitle>
-                  {/*   <DropdownMenu>
+                    <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   variant="ghost"
@@ -244,16 +354,16 @@ return (
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="rounded-xl">
-                                <DropdownMenuItem onClick={() => handleBudgetEdit(budget)} className="rounded-lg">
+                                <DropdownMenuItem onClick={() => handleBudgetEdit(transformToBudget(budget))} className="rounded-lg">
                                   <Pencil   className="h-4 w-4 mr-2" />
                                   Editar
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive rounded-lg">
+                                <DropdownMenuItem  onClick={() => openDeleteDialog(transformToBudget(budget))} className="text-destructive rounded-lg">
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Excluir
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
-                    </DropdownMenu>  */}
+                    </DropdownMenu> 
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -296,7 +406,7 @@ return (
             
             </Card>
           );
-})}
+      })}
         </div>
       </div>
 
@@ -304,37 +414,61 @@ return (
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Metas de Economia</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          {mockGoals.map((goal) => (
-            <Card key={goal.title} className="shadow-soft">
+          {dataGoal.map((goal) => (
+            <Card key={goal.category} className="shadow-soft">
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">{goal.title}</CardTitle>
+                  <CardTitle className="text-lg">{getDescriptionCategory(goal.category)}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    R$ {goal.current.toFixed(2)} de R$ {goal.target.toFixed(2)}
+                    R$ {goal.amount.toFixed(2)} de R$ {goal.amount.toFixed(2)}
                   </span>
                   <span className="text-primary font-medium">
-                    {goal.percentage}%
+                    {goal.amount}%
                   </span>
                 </div>
                 <Progress
-                  value={goal.percentage}
+                  value={goal.amount}
                   className="h-2"
                   indicatorClassName="bg-primary"
                 />
-                <p className="text-xs text-muted-foreground">
+             {/*    <p className="text-xs text-muted-foreground">
                   Faltam R$ {(goal.target - goal.current).toFixed(2)} para
                   atingir sua meta
-                </p>
+                </p> */}
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Orçamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {budgetToDelete
+                ? `Tem certeza que deseja excluir "${getDescriptionCategory(budgetToDelete.category)}"? Esta ação não pode ser desfeita.`
+                : "Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="w-full sm:flex-1">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="w-full sm:flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDeleteBudget}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
