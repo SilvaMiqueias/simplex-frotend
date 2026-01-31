@@ -16,21 +16,48 @@ const months = [
 interface MonthYearPickerProps {
   value?: Date;
   onChange: (date: Date) => void;
+  disabled?: boolean;
+  minDate?: Date;
+  placeholder?: string;
+  className?: string;
 }
 
-export function MonthYearPicker({ value, onChange }: MonthYearPickerProps) {
+export function MonthYearPicker({
+  value,
+  onChange,
+  disabled = false,
+  minDate,
+  placeholder = "Selecione",
+  className,
+}: MonthYearPickerProps) {
   const [year, setYear] = useState(
     value?.getFullYear() ?? new Date().getFullYear()
   );
+
+  const isMonthDisabled = (year: number, month: number) => {
+    if (!minDate) return false;
+
+    const current = new Date(year, month, 1);
+    const min = new Date(
+      minDate.getFullYear(),
+      minDate.getMonth(),
+      1
+    );
+
+    return current <= min;
+  };
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-between"
+          className={cn("w-full justify-between", className)}
+          disabled={disabled}
         >
-          {months[value?.getMonth() ?? new Date().getMonth()]} {year}
+          {value
+            ? `${months[value.getMonth()]} ${value.getFullYear()}`
+            : placeholder}
         </Button>
       </PopoverTrigger>
 
@@ -41,6 +68,7 @@ export function MonthYearPicker({ value, onChange }: MonthYearPickerProps) {
             variant="ghost"
             size="icon"
             onClick={() => setYear((y) => y - 1)}
+            disabled={disabled}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -51,6 +79,7 @@ export function MonthYearPicker({ value, onChange }: MonthYearPickerProps) {
             variant="ghost"
             size="icon"
             onClick={() => setYear((y) => y + 1)}
+            disabled={disabled}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -63,6 +92,8 @@ export function MonthYearPicker({ value, onChange }: MonthYearPickerProps) {
               value?.getFullYear() === year &&
               value?.getMonth() === index;
 
+            const disabledMonth = isMonthDisabled(year, index);
+
             return (
               <Button
                 key={month}
@@ -71,6 +102,7 @@ export function MonthYearPicker({ value, onChange }: MonthYearPickerProps) {
                   "h-9",
                   selected && "bg-primary text-primary-foreground"
                 )}
+                disabled={disabled || disabledMonth}
                 onClick={() =>
                   onChange(new Date(year, index, 1))
                 }

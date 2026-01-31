@@ -5,9 +5,31 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { useLoading } from "@/context/LoadingContext";
+import { UserDetail } from "@/components/model/user";
 
 export default function Settings() {
-  const { theme, setTheme } = useTheme();
+ const { theme, setTheme } = useTheme();
+ const { getUser, role, email } = useAuth();
+ const [reload, setReload] = useState(0);
+ const { setLoading } = useLoading();
+ const [user, setUser] = useState<UserDetail | undefined>(); 
+ 
+
+ useEffect(() => {
+       if (!role) return;
+         findUser();
+   }, [role, reload]);
+ 
+ 
+ async function findUser() {
+        const  result = await getUser(email);
+        setUser(result);
+  }
+  
+  
 
   return (
     <div className="space-y-6">
@@ -52,47 +74,25 @@ export default function Settings() {
                 <Input
                   id="name"
                   defaultValue="João da Silva"
+                  value={user?.name}
                   className="pl-9"
                 />
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  defaultValue="joao@example.com"
-                  className="pl-9"
-                />
+              <div className="grid gap-2 md:col-span-2 ">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    defaultValue="joao@example.com"
+                    value={user?.username}
+                    className="pl-9 w-full"
+                  />
+                </div>
               </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  defaultValue="(11) 98765-4321"
-                  className="pl-9"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-2 md:col-span-2">
-              <Label htmlFor="location">Localização</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="location"
-                  defaultValue="São Paulo, Brasil"
-                  className="pl-9"
-                />
-              </div>
-            </div>
           </div>
 
           <div className="flex gap-3 sm:justify-end">

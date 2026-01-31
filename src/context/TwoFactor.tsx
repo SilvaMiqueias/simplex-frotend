@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useLoading } from "./LoadingContext";
+import OtpInput from 'react-otp-input';
 
 export default function TwoFactor() {
   const [code, setCode] = useState("");
@@ -38,57 +39,110 @@ export default function TwoFactor() {
 
   return (
     <div style={{display: "flex", flexDirection: "column", margin: "20px", justifyContent: "center", alignItems: "center", marginTop: "10%"}}>
-      <div style={{border: "1px solid gray", borderRadius: "5px", padding: "16px", boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.04)"}}>
+      <div className="w-full max-w-xl mx-auto rounded-xl border border-zinc-800 bg-zinc-900/90 backdrop-blur p-8 shadow-lg shadow-black/30">
            <div style={{ textAlign: "center", padding: 16, display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center" }}>
-           <h1 style={{marginBottom: "30px", fontSize: "20px", fontWeight: 700}}>Escanei o QR code para a autênticação em dois fatores</h1>
+           <h1 style={{marginBottom: "30px", fontSize: "20px", fontWeight: 700}}>Escanei o QR Code</h1>
             <img
+              style={{backgroundColor: "transparent"}}
               src={`data:image/png;base64,${qrCode}`}
               alt="QR Code para autenticação em dois fatores"
               width={180}
               height={180}
             />
         </div>
-        <div style={{display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", gap: "10px",  margin: "40px" }}>
+        <div style={{display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", gap: "10px",  margin: "10px" }}>
           <h1 style={{fontWeight: 700}}>Autenticação em dois fatores</h1>
 
-          <p style={{fontWeight: 700}}>
+          <p style={{fontWeight: 700, marginTop: "10px", marginBottom: "10px"}}>
             Digite o código gerado no seu aplicativo autenticador
           </p>
 
-          <form onSubmit={handleSubmit}>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="000000"
-              value={code}
-              onChange={(e) =>
-                setCode(e.target.value.replace(/\D/g, ""))
-              }
-              style={{ fontSize: 20, textAlign: "center", color: "black" }}
-            />
+      <form onSubmit={handleSubmit}>
+   
 
-            <button style={{marginLeft: "10px", backgroundColor: "#FFFFFF", color: "black", padding: "3px 20px", borderRadius: "5px"}} type="submit" disabled={loading}>
-              {loading ? "Validando..." : "Confirmar"}
-            </button>
-          </form>
+            <OtpInput
+                  value={code}
+                  onChange={setCode}
+                  numInputs={6}
+                  shouldAutoFocus
+                  renderSeparator={
+                    <span className="mx-2 h-1.5 w-1.5 rounded-full bg-gray-500/60" />
+                  }
+                  renderInput={(props) => (
+                      <input
+                      {...props}
+                      className="
+                        !w-14 !h-14
+                        aspect-square
+                        box-border
 
-          <button
-            type="button"
-            onClick={logout}
-            style={{ marginTop: 16 , border: "1px solid gray", padding: 8, borderRadius: "5px", width: "120px"}}
-          >
-            Cancelar
-          </button>
+                        px-1 py-0.5
+                        leading-none
 
-          {error && (
-            <p style={{ color: "red", marginTop: 8 }}>{error}</p>
-          )}
-        </div>
-      </div>
+                        bg-transparent
+                        border border-zinc-600
+                        rounded-md
+
+                        text-white
+                        text-xl
+                        text-center
+
+                        outline-none
+                        focus:outline-none
+                        focus:ring-0
+
+                        transition-colors duration-150
+                        focus:border-sky-400
+                      "
+                    />
+                    )}
+             />
+                  <div style={{display: "flex", flexDirection: "row", gap: "24px", marginTop: "20px"}}>
+                      <button style={{padding: "8px 16px", borderRadius: "5px", width: "120px", height: "42px"}} type="submit" disabled={loading} 
+                      className="  w-[120px] h-[42px]
+
+                      bg-white
+                      text-black
+
+                      rounded-md
+                      px-4 py-2
+
+                      hover:bg-emerald-700
+                      hover:text-white
+                      active:bg-emerald-800
+
+                      disabled:bg-emerald-600/50
+                      disabled:cursor-not-allowed
+
+                      focus:outline-none
+                      focus:ring-2
+                      focus:ring-emerald-500
+                      focus:ring-offset-2
+                      focus:ring-offset-zinc-900
+
+                      transition-alll"
+                      >
+                              {loading ? "Validando..." : "Confirmar"}
+                      </button>
+                      <button type="button" onClick={logout} style={{ padding: "8px 16px", borderRadius: "5px", height: "42px", width: "120px"}} 
+                      className="   border border-zinc-700
+                    hover:border-red-500
+                    hover:text-red-500
+                    focus:border-red-500
+                    focus:outline-none
+                    transition-colors
+                      ">
+                            Cancelar
+                      </button>
+                  </div>
+   
+       </form>
+
+      {error && (<p style={{ color: "red", marginTop: 8 }}>{error}</p>)}
+ </div>
+</div>
      
       
-    </div>
+</div>
     
-  );
-}
+);}

@@ -9,6 +9,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { useLoading } from "@/context/LoadingContext";
+import { getAllRates } from "@/services/dashboardService";
+import { Rates, CurrencyItem, ratesToCurrencyListWithChange } from "@/components/model/rates";
+
 
 const mockCurrencies = [
   { code: "USD", name: "Dólar Americano", rate: 5.12, change: 1.2 },
@@ -31,6 +37,37 @@ const mockTopLosers = [
 ];
 
 export default function MarketData() {
+const { role } = useAuth();
+const { loading, setLoading } = useLoading();
+const [reload, setReload] = useState(0);
+
+
+const [dataRates, setDataRates] = useState<Rates>();
+const [currencies, setCurrencies] = useState<CurrencyItem[]>([]);
+
+
+
+useEffect(() => {
+      if (!role) return;
+        getRates();
+  }, [role, reload]);
+
+
+async function getRates() {
+  setLoading(true);
+  const  result = await getAllRates();
+  setDataRates(result);
+  const list = ratesToCurrencyListWithChange(result.todayRates, result.previousRates);
+  setCurrencies(list);
+  setLoading(false);
+}
+
+function round(value: number, decimals = 2): number {
+  return Number(value.toFixed(decimals));
+}
+
+
+
   return (
     <div className="space-y-6">
       <div>
@@ -48,6 +85,7 @@ export default function MarketData() {
         <CardContent>
           {/* Desktop: tabela */}
           <div className="hidden md:block">
+
             <Table className="min-w-[640px]">
               <TableHeader>
                 <TableRow>
@@ -58,14 +96,16 @@ export default function MarketData() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockCurrencies.map((currency) => (
+                {loading && <p>Carregando...</p>}
+
+                {!loading && currencies.map((currency) => (
                   <TableRow key={currency.code}>
                     <TableCell className="font-medium">
                       {currency.code}
                     </TableCell>
                     <TableCell>{currency.name}</TableCell>
                     <TableCell className="text-right">
-                      R$ {currency.rate.toFixed(4)}
+                      R$ { round((1 / currency.rate))}
                     </TableCell>
                     <TableCell className="text-right">
                       <Badge
@@ -75,7 +115,7 @@ export default function MarketData() {
                         className={currency.change >= 0 ? "bg-success" : ""}
                       >
                         {currency.change >= 0 ? "+" : ""}
-                        {currency.change.toFixed(2)}%
+                        {round(currency.change)}%
                       </Badge>
                     </TableCell>
                   </TableRow>

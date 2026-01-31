@@ -30,3 +30,7 @@ export const categoryList:  Array<Category> = [
   export function getDescriptionCategoryById(id: number){
    return categoryList.find(item => item.id === id).description;
  }
+
+   export function getNameCategoryById(id: number){
+   return categoryList.find(item => item.id === id).name;
+ }
