@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -24,11 +25,14 @@ export default function Signup() {
    
     try{
       await createUserCustomer(name, email, password);
+      toast.success('Usuário criado com sucesso!');
     } catch (error) {
       console.error(error);
-      alert("Erro ao criar usuário");
+      toast.error("Erro ao criar usuário");
+    }finally{
+      navigate("/login");
     }
-    navigate("/login");
+    
   };
 
   return (
