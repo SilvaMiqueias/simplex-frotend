@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getAllCardAdmin, getAllCardCustomer } from "@/services/dashboardService";
 import { useLoading } from "@/context/LoadingContext";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 export default function Dashboard() {
 
@@ -15,6 +16,8 @@ export default function Dashboard() {
   let percentIncome:  boolean = false ;
   let percentTotal: boolean = false;
   const { setLoading } = useLoading();
+  const [dateReference, setDateReference] = useState<string>(new Date().toISOString());
+
   
 
        
@@ -87,6 +90,10 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+
+      <NotificationCenter dateReference={dateReference} />
+
+
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
