@@ -28,11 +28,13 @@ type AuthContextType = {
   qrCode: string;
   role: string;
   email: string;
+  image: string;
   createUserCustomer: (name: string, username: string, password: string) => Promise<void>;
   loginWithPassword: (username: string, password: string) => Promise<void>;
   verify2FA: (code: string) => Promise<void>;
   logout: () => void;
   getUser: (email: string) => Promise<UserDetail>;
+  updateUser: (id: number, name: string, username: string, image: string) => Promise<void>;
 };
 
 
@@ -54,6 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useState<string | null>(null);
        const [email, setEmail] =
     useState<string | null>(null);
+    const [image, setImage] =
+    useState<string | null>(null);
 
 
   useEffect(() => {
@@ -66,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function getUser(email: string) {
      const { data } = await api.get("/auth/users/get-user", {params: {email}});
+     setImage(`data:image/jpeg;base64,${data.image}`);
      return data;
     }
 
@@ -81,6 +86,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
     
+  }
+
+  async function updateUser(
+    id,
+    name,
+    username,
+    image,
+    ) {
+    const { data } = await api.put(`/auth/users/update`, {
+      id,
+      name,
+      username,
+      image: image ?? null,
+    });
+
+    getUser(username);
+    return data;
   }
 
 
@@ -160,11 +182,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         qrCode,
         role,
         email,
+        image,
         createUserCustomer,
         loginWithPassword,
         verify2FA,
         logout,
-        getUser
+        getUser,
+        updateUser
       }}
     >
       {children}

@@ -5,4 +5,6 @@ export class Goal {
   dateStart?: string;
   dateEnd?: string;
   description?: string;
+  achievedAmount?: number;
+  remainingAmount?: number;
 }

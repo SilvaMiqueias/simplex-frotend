@@ -2,11 +2,10 @@ import { Wallet, TrendingUp, TrendingDown, Plus } from "lucide-react";
 import { DashboardCard } from "@/components/DashboardCard";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialChart, TrendChart } from "@/components/FinancialChart";
-import { CurrencyRates } from "@/components/CurrencyRates";
-import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getAllCardAdmin, getAllCardCustomer } from "@/services/dashboardService";
+import { useLoading } from "@/context/LoadingContext";
 
 export default function Dashboard() {
 
@@ -15,6 +14,8 @@ export default function Dashboard() {
   let percentExpense: boolean = false ;
   let percentIncome:  boolean = false ;
   let percentTotal: boolean = false;
+  const { setLoading } = useLoading();
+  
 
        
    useEffect(() => {
@@ -23,6 +24,7 @@ export default function Dashboard() {
    }, [role]);
 
    async function getCards() {
+       setLoading(true);
        if (role === "ROLE_ADMINISTRATOR") {
          const  dataAdmin  = await getAllCardAdmin();
          setDataCards(dataAdmin);
@@ -30,6 +32,7 @@ export default function Dashboard() {
          const  dataCustomer = await getAllCardCustomer();
          setDataCards(dataCustomer);
        }
+       setLoading(false);
      }
  
 
@@ -129,11 +132,8 @@ export default function Dashboard() {
 
       {/* Bottom Section */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 apple-card p-6">
+        <div className="lg:col-span-3 apple-card p-12">
           <TransactionList />
-        </div>
-        <div className="apple-card p-6">
-          <CurrencyRates />
         </div>
       </div>
     </div>

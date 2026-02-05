@@ -28,7 +28,6 @@ export function BudgetModal({
   onSave,
 }: BudgetModalProps) {
   const [formData, setFormData] = useState<Budget>(new Budget());
-  const [openCalendar, setOpenCalendar] = useState(false);
 
   useEffect(() => {
     setFormData(budget ?? new Budget());
@@ -37,11 +36,6 @@ export function BudgetModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
-  };
-
-  const parseLocalDate = (dateString: string) => {
-    const [year, month, day] = dateString.split("-").map(Number);
-    return new Date(year, month - 1, day); 
   };
 
   return (

@@ -4,6 +4,7 @@ export class UserDetail{
   password?: string;
   name?: string;
   role?: RoleName;
+  image?: string;
 }
 
 export enum RoleName {

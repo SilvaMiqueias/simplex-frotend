@@ -5,20 +5,45 @@ export function Toaster() {
   const { toasts } = useToast();
 
   return (
-    <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
-        return (
-          <Toast key={id} {...props}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && <ToastDescription>{description}</ToastDescription>}
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        );
-      })}
-      <ToastViewport />
-    </ToastProvider>
+   <ToastProvider>
+  {toasts.map(({ id, title, description, action, ...props }) => (
+    <Toast
+        key={id}
+        {...props}
+        className="w-full max-w-xl p-6"
+      >
+        <div className="grid gap-2">
+          {title && (
+            <ToastTitle className="text-lg font-semibold">
+              {title}
+            </ToastTitle>
+          )}
+          {description && (
+            <ToastDescription className="text-base">
+              {description}
+            </ToastDescription>
+          )}
+        </div>
+        {action}
+        <ToastClose />
+      </Toast>
+  ))}
+
+   <ToastViewport
+      className="
+        fixed
+        top-4
+        left-1/2
+        -translate-x-1/2
+        z-50
+        flex
+        w-full
+        max-w-xl
+        flex-col
+        gap-2
+        p-4
+      "
+    />
+  </ToastProvider>
   );
 }

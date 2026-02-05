@@ -18,10 +18,16 @@ import { TwoFactorRoute } from "./context/TwoFactorRoute";
 import TwoFactor from "./context/TwoFactor";
 import { ProtectedLayout } from "./context/ProtectedLayout";
 import { LoadingProvider } from "./context/LoadingContext";
+import { useAuth } from "./context/AuthContext";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+
+const App = () => {
+
+  const { role } = useAuth();
+ 
+  return (
   <QueryClientProvider client={queryClient}>
     <LoadingProvider>
     <ThemeProvider defaultTheme="system" storageKey="financeapp-theme">
@@ -50,7 +56,7 @@ const App = () => (
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="transactions" element={<Transactions />} />
-                <Route path="budgets" element={<Budgets />} />
+                {role === 'ROLE_CUSTOMER' && ( <Route path="budgets" element={<Budgets />} />)}
                 <Route path="market-data" element={<MarketData />} />
                 <Route
                   path="currency-converter"
@@ -67,7 +73,9 @@ const App = () => (
     </ThemeProvider>
    </LoadingProvider>
   </QueryClientProvider>
+  
 
 );
+};
 
 export default App;

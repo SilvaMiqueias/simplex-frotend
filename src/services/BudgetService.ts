@@ -23,7 +23,7 @@ export async function requestDeleteBudget(id: number){
 
 
 export async function findAllGoals(referenceDate: BudgetResultDTO){
-     const { data } = await api.get("api/v1/customer/goal/find-all", {params: referenceDate});
+     const { data } = await api.get("api/v1/customer/goal/find-all-chart", {params: referenceDate});
      return data;
 }
 

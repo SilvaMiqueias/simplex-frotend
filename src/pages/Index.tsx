@@ -14,14 +14,35 @@ import {
 import { User, LogOut } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { LoadingProvider } from "@/context/LoadingContext";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { UserDetail } from "@/components/model/user";
 
 
 const Index = () => {
   const navigate = useNavigate();
+  const { logout, getUser, role, email, image } = useAuth();
+  const [user, setUser] = useState<UserDetail | undefined>(); 
 
+  
   const userName = "Simplex Teste";
   const userEmail = "simplesx@gmail.com";
   const userInitials = "ST";
+
+  function handleLogout(){
+    logout();
+  }
+
+  useEffect(() => {
+         if (!role) return;
+           findUser();
+    }, [role]);
+   
+   
+   async function findUser() {
+          const  result = await getUser(email);
+          setUser(result);
+    }
 
   return (
     <LoadingProvider>
@@ -38,7 +59,7 @@ const Index = () => {
                 <DropdownMenuTrigger asChild>
                   <div className="cursor-pointer rounded-full hover:shadow-medium transition-smooth">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src="/foto.png" alt="Profile" />
+                      <AvatarImage src={image || "/foto.png"} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {userInitials}
                       </AvatarFallback>
@@ -53,17 +74,17 @@ const Index = () => {
                   <DropdownMenuLabel className="px-3 py-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="/foto.png" alt="Profile" />
+                      <AvatarImage src={image || "/foto.png"} />
                         <AvatarFallback className="bg-primary text-primary-foreground">
                           {userInitials}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
                         <p className="text-sm font-medium leading-none truncate">
-                          {userName}
+                          {user?.name}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {userEmail}
+                          {user?.username}
                         </p>
                       </div>
                     </div>
@@ -78,7 +99,7 @@ const Index = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive cursor-pointer"
-                    onSelect={() => navigate("/login")}
+                    onSelect={handleLogout}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Sair
