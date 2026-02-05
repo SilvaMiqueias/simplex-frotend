@@ -17,11 +17,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/context/AuthContext";
 
-const menuItems = [
+const baseMenu = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Transações", url: "/transactions", icon: ArrowLeftRight },
-  { title: "Orçamentos/Metas", url: "/budgets", icon: Target },
   { title: "Cotações/Investimentos", url: "/market-data", icon: TrendingUp },
   { title: "Conversão de Moedas", url: "/currency-converter", icon: Repeat2 },
 ];
@@ -30,7 +30,22 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const { role } = useAuth();
 
+const menuItems =
+  role === "ROLE_CUSTOMER"
+    ? [
+        baseMenu[0],
+        baseMenu[1],
+        {
+          title: "Orçamentos/Metas",
+          url: "/budgets",
+          icon: Target,
+        },
+        ...baseMenu.slice(2),
+      ]
+    : baseMenu;
+    
   const isActive = (path: string) => {
     return currentPath === path || currentPath.startsWith(path + "/");
   };

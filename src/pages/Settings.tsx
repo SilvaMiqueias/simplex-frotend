@@ -6,17 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLoading } from "@/context/LoadingContext";
 import { UserDetail } from "@/components/model/user";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function Settings() {
  const { theme, setTheme } = useTheme();
- const { getUser, role, email } = useAuth();
+ const { getUser, role, email, updateUser } = useAuth();
  const [reload, setReload] = useState(0);
  const { setLoading } = useLoading();
  const [user, setUser] = useState<UserDetail | undefined>(); 
- 
+ const [imageBase64, setImageBase64] = useState("");
+ const fileInputRef = useRef<HTMLInputElement | null>(null);
+const [imagePreview, setImagePreview] = useState<string | null>(
+  user?.image ?? null
+);
+const navigate = useNavigate();
 
  useEffect(() => {
        if (!role) return;
@@ -27,10 +34,52 @@ export default function Settings() {
  async function findUser() {
         const  result = await getUser(email);
         setUser(result);
+        setImagePreview(`data:image/jpeg;base64,${result.image}`);
   }
-  
-  
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        toast.error("Arquivo inválido");
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Imagem maior que 2MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setImagePreview(reader.result); // preview imediato
+          setImageBase64(reader.result.split(",")[1]); // pronto p/ backend
+        }
+      };
+
+      reader.readAsDataURL(file);
+  };
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setLoading(true);
+   
+    try{
+      await updateUser(user.id, user.username, user.username, imageBase64);
+      toast.success('Usuário editado com sucesso!')
+    } catch (error) {
+      toast.error('Erro ao editar usuário');
+    }finally{
+      setLoading(false);
+      setReload((prev) => prev + 1)
+    }
+  };
+  
+  
   return (
     <div className="space-y-6">
       <div>
@@ -51,13 +100,24 @@ export default function Settings() {
         <CardContent className="space-y-6">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <Avatar className="h-20 w-20">
-              <AvatarImage src="/foto.png" alt="Profile" />
+              <AvatarImage src={imagePreview || "/foto.png"} />
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                 JD
               </AvatarFallback>
             </Avatar>
+            <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
             <div className="flex flex-col items-center sm:items-start">
-              <Button variant="outline" size="sm">
+              <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                 Alterar Foto
               </Button>
               <p className="text-sm text-muted-foreground mt-1 text-center sm:text-left">
@@ -96,7 +156,7 @@ export default function Settings() {
           </div>
 
           <div className="flex gap-3 sm:justify-end">
-            <Button className="w-full sm:w-auto">Salvar Alterações</Button>
+            <Button onClick={handleSubmit} className="w-full sm:w-auto">Salvar Alterações</Button>
           </div>
         </CardContent>
       </Card>

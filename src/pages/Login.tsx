@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import { useLoading } from "@/context/LoadingContext";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,33 +21,34 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const { loginWithPassword } = useAuth();
   const { status } = useAuth();
+  const { setLoading } = useLoading();
+  const location = useLocation();
 
+  
+
+useEffect(() => {
+ if (location.pathname === "/login" || location.pathname === "/") {
+    if (status === "2fa_required" || status === "2fa_setup") {
+      navigate("/2fa", { replace: true });
+    }
+
+    if (status === "authenticated") {
+      navigate("/dashboard", { replace: true });
+    }
+  }
+}, [status, navigate, location.pathname]);  
 
 const handleLogin = async (e: React.FormEvent) => {
   e.preventDefault();
 
   try {
+    setLoading(true);
     await loginWithPassword(email, password);
-
-    /**
-     * Se o backend exigir 2FA,
-     * o status vira "2fa_pending"
-     */
-    if (status === "2fa_required" ||
-      status === "2fa_setup") {
-      navigate("/2fa");
-      return;
-    }
-
-    /**
-     * Se login completo (sem 2FA)
-     */
-    if (status === "authenticated") {
-      navigate("/dashboard");
-    }
   } catch (error) {
     console.error(error);
-    alert("Erro ao fazer login");
+     toast.error('Erro ao fazer login');
+  } finally{
+    setLoading(false);
   }
 };
 

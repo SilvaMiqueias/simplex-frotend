@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRightLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,20 +11,42 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-
-const currencies = [
-  { code: "BRL", name: "Real Brasileiro", rate: 1 },
-  { code: "USD", name: "Dólar Americano", rate: 5.12 },
-  { code: "EUR", name: "Euro", rate: 5.45 },
-  { code: "GBP", name: "Libra Esterlina", rate: 6.28 },
-  { code: "JPY", name: "Iene Japonês", rate: 0.038 },
-  { code: "ARS", name: "Peso Argentino", rate: 0.0054 },
-];
+import { useLoading } from "@/context/LoadingContext";
+import { useAuth } from "@/context/AuthContext";
+import { getAllRates } from "@/services/dashboardService";
+import { CurrencyItem, Rates, ratesToCurrencyListWithChange } from "@/components/model/rates";
 
 export default function CurrencyConverter() {
   const [amount, setAmount] = useState<string>("100");
   const [fromCurrency, setFromCurrency] = useState<string>("BRL");
   const [toCurrency, setToCurrency] = useState<string>("USD");
+  const { loading, setLoading } = useLoading();
+  const { role } = useAuth();
+  const [reload, setReload] = useState(0);
+  const [dataRates, setDataRates] = useState<Rates>();
+  const [currencies, setCurrencies] = useState<CurrencyItem[]>([]);
+  const ITEMS_PER_PAGE = 5;
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  
+  useEffect(() => {
+        if (!role) return;
+          getRates();
+    }, [role, reload]);
+
+
+  async function getRates() {
+    setLoading(true);
+    const  result = await getAllRates();
+    setDataRates(result);
+    const list = ratesToCurrencyListWithChange(result.todayRates, result.previousRates);
+   setCurrencies([
+          { code: "BRL", name: "Real Brasileiro", rate: 1 },
+          ...list,
+    ]);
+    setLoading(false);
+  }
+
 
   const getRate = (code: string) => {
     return currencies.find((c) => c.code === code)?.rate || 1;
@@ -60,16 +82,38 @@ export default function CurrencyConverter() {
     setToCurrency(fromCurrency);
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Conversão de Moedas</h1>
-        <p className="text-muted-foreground">
-          Converta valores entre diferentes moedas
-        </p>
-      </div>
+  const ratesWithoutBRL = currencies.filter(
+  (c) => c.code !== "BRL"
+  );
 
-      <div className="grid gap-6 md:grid-cols-2 ">
+  const totalPages = Math.ceil(
+    ratesWithoutBRL.length / ITEMS_PER_PAGE
+  );
+
+  const paginatedRates = ratesWithoutBRL.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+
+   return (
+  <div className="space-y-6">
+    {/* Header */}
+    <div>
+      <h1 className="text-3xl font-bold">Conversão de Moedas</h1>
+      <p className="text-muted-foreground">
+        Converta valores entre diferentes moedas
+      </p>
+    </div>
+
+    {/* Loading */}
+    {loading || currencies.length === 0 ? (
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        Carregando cotações…
+      </div>
+    ) : (
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Conversor */}
         <Card className="shadow-soft">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0">
             <CardTitle>Conversor</CardTitle>
@@ -78,59 +122,39 @@ export default function CurrencyConverter() {
               onClick={swapCurrencies}
               className="w-full sm:w-auto"
             >
-              <ArrowRightLeft className="h-4 w-4" />
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
               Inverter
             </Button>
           </CardHeader>
+
           <CardContent className="space-y-6">
-            {/* Converter Stack with centered swap button */}
-            <div className="relative py-2">
-              {/* From Currency */}
-              <div className="space-y-2">
-                <Label>De</Label>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                  <Select value={fromCurrency} onValueChange={setFromCurrency}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies.map((currency) => (
-                        <SelectItem key={currency.code} value={currency.code}>
-                          {currency.code} - {currency.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+            {/* De */}
+            <div className="space-y-2">
+              <Label>De</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  step="0.01"
+                  disabled={loading}
+                />
 
-              {/* Swap Button - perfectly centered between sections */}
-              {/* <Button
-                variant="outline"
-                size="icon"
-                onClick={swapCurrencies}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full z-10"
-              >
-                <ArrowRightLeft className="h-4 w-4" />
-              </Button> */}
-
-              {/* To Currency */}
-              <div className="space-y-2 mt-5">
-                <Label>Para</Label>
-                <Select value={toCurrency} onValueChange={setToCurrency}>
+                <Select
+                  value={fromCurrency}
+                  onValueChange={setFromCurrency}
+                  disabled={loading}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {currencies.map((currency) => (
-                      <SelectItem key={currency.code} value={currency.code}>
+                      <SelectItem
+                        key={currency.code}
+                        value={currency.code}
+                      >
                         {currency.code} - {currency.name}
                       </SelectItem>
                     ))}
@@ -139,46 +163,121 @@ export default function CurrencyConverter() {
               </div>
             </div>
 
-            {/* Result */}
-            <div className="pt-4 border-t">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Resultado</p>
-                <p className="text-3xl sm:text-4xl font-bold text-primary">
-                  {calculateConversion().toFixed(2)} {toCurrency}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Taxa de câmbio: 1 {fromCurrency} ={" "}
-                  {getExchangeRate().toFixed(4)} {toCurrency}
-                </p>
-              </div>
+            {/* Para */}
+            <div className="space-y-2">
+              <Label>Para</Label>
+              <Select
+                value={toCurrency}
+                onValueChange={setToCurrency}
+                disabled={loading}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((currency) => (
+                    <SelectItem
+                      key={currency.code}
+                      value={currency.code}
+                    >
+                      {currency.code} - {currency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Resultado */}
+            <div className="pt-4 border-t space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Resultado
+              </p>
+
+              <p className="text-3xl sm:text-4xl font-bold text-primary">
+                {calculateConversion().toFixed(2)} {toCurrency}
+              </p>
+
+              <p className="text-sm text-muted-foreground">
+                Taxa de câmbio: 1 {fromCurrency} ={" "}
+                {getExchangeRate().toFixed(4)} {toCurrency}
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Exchange Rate Table */}
+        {/* Tabela de Taxas */}
         <Card className="shadow-soft">
           <CardHeader>
             <CardTitle>Tabela de Taxas</CardTitle>
           </CardHeader>
+
           <CardContent>
             <div className="grid gap-2">
-              {currencies.map((currency) => (
-                <div
-                  key={currency.code}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                >
-                  <span className="font-medium">
-                    {currency.code} - {currency.name}
-                  </span>
-                  <span className="text-muted-foreground">
-                    1 BRL = {currency.rate.toFixed(4)} {currency.code}
-                  </span>
-                </div>
-              ))}
-            </div>
+              {paginatedRates.map((currency) => (
+                  <div
+                    key={currency.code}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {currency.code} - {currency.name}
+                      </span>
+                      {currency.change !== undefined && (
+                        <span
+                          className={`text-sm ${
+                            currency.change >= 0
+                              ? "text-emerald-600"
+                              : "text-red-500"
+                          }`}
+                        >
+                          {currency.change >= 0 ? "▲" : "▼"}{" "}
+                          {currency.change.toFixed(2)}%
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="text-muted-foreground">
+                      1 BRL = {currency.rate.toFixed(4)}{" "}
+                      {currency.code}
+                    </span>
+                  </div>
+                ))}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === 1}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                      >
+                        Anterior
+                      </Button>
+
+                      <span className="text-sm text-muted-foreground">
+                        Página {currentPage} de {totalPages}
+                      </span>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === totalPages}
+                        onClick={() =>
+                          setCurrentPage((p) =>
+                            Math.min(totalPages, p + 1)
+                          )
+                        }
+                      >
+                        Próxima
+                      </Button>
+                    </div>
+                  )}
+              </div>
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 }

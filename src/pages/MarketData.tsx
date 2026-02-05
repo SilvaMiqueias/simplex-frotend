@@ -12,29 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { useLoading } from "@/context/LoadingContext";
-import { getAllRates } from "@/services/dashboardService";
+import { getAllRates, getAllStocks } from "@/services/dashboardService";
 import { Rates, CurrencyItem, ratesToCurrencyListWithChange } from "@/components/model/rates";
-
-
-const mockCurrencies = [
-  { code: "USD", name: "Dólar Americano", rate: 5.12, change: 1.2 },
-  { code: "EUR", name: "Euro", rate: 5.45, change: -0.8 },
-  { code: "GBP", name: "Libra Esterlina", rate: 6.28, change: 0.5 },
-  { code: "JPY", name: "Iene Japonês", rate: 0.038, change: -0.3 },
-  { code: "ARS", name: "Peso Argentino", rate: 0.0054, change: -2.1 },
-];
-
-const mockTopGainers = [
-  { symbol: "PETR4", name: "Petrobras", price: 38.45, change: 4.8 },
-  { symbol: "VALE3", name: "Vale", price: 62.3, change: 3.2 },
-  { symbol: "ITUB4", name: "Itaú", price: 28.9, change: 2.7 },
-];
-
-const mockTopLosers = [
-  { symbol: "MGLU3", name: "Magazine Luiza", price: 2.15, change: -5.2 },
-  { symbol: "VVAR3", name: "Via Varejo", price: 1.82, change: -4.1 },
-  { symbol: "AZUL4", name: "Azul", price: 9.2, change: -3.8 },
-];
+import { StockList, Stocks } from "@/components/model/stock";
 
 export default function MarketData() {
 const { role } = useAuth();
@@ -44,12 +24,21 @@ const [reload, setReload] = useState(0);
 
 const [dataRates, setDataRates] = useState<Rates>();
 const [currencies, setCurrencies] = useState<CurrencyItem[]>([]);
+const [stock, setStock] = useState<StockList>();
+const [stockAsc, setStockAsc] = useState<Stocks[]>([]);
+const [stockDesc, setStockDesc] = useState<Stocks[]>([]);
+const [pageAsc, setPageAsc] = useState(0);
+const [pageDesc, setPageDesc] = useState(0);
+const pageSize = 5;
 
+const [pageCurrencies, setPageCurrencies] = useState(0);
+const pageSizeCurrencies = 10;
 
 
 useEffect(() => {
       if (!role) return;
         getRates();
+        getStocks();
   }, [role, reload]);
 
 
@@ -62,10 +51,50 @@ async function getRates() {
   setLoading(false);
 }
 
+async function getStocks() {
+  setLoading(true);
+  const  response = await getAllStocks();
+  setStock(response.results);
+  let desc = orderByChangePercent(response.results, "asc", "negative");
+  let asc  = orderByChangePercent(response.results, "desc", "positive");
+  setStockDesc(desc);
+  setStockAsc(asc);
+  setLoading(false);
+}
+function orderByChangePercent(
+  stocks: Stocks[],
+  direction: "asc" | "desc",
+  filter?: "positive" | "negative"
+) {
+  if (!Array.isArray(stocks)) return []
+
+  return stocks
+    .filter(stock => {
+      const value = stock.regularMarketChangePercent ?? 0
+
+      if (filter === "positive") return value > 0
+      if (filter === "negative") return value < 0
+      return true
+    })
+    .sort((a, b) => {
+      const aValue = a.regularMarketChangePercent ?? 0
+      const bValue = b.regularMarketChangePercent ?? 0
+
+      return direction === "asc"
+        ? aValue - bValue
+        : bValue - aValue
+    })
+}
+
+
 function round(value: number, decimals = 2): number {
   return Number(value.toFixed(decimals));
 }
 
+function paginate<T>(items: T[], page: number, size: number) {
+  const start = page * size;
+  return items.slice(start, start + size);
+}
 
 
   return (
@@ -98,7 +127,7 @@ function round(value: number, decimals = 2): number {
               <TableBody>
                 {loading && <p>Carregando...</p>}
 
-                {!loading && currencies.map((currency) => (
+                {!loading && paginate(currencies, pageCurrencies, pageSizeCurrencies).map((currency) => (
                   <TableRow key={currency.code}>
                     <TableCell className="font-medium">
                       {currency.code}
@@ -125,7 +154,7 @@ function round(value: number, decimals = 2): number {
           </div>
           {/* Mobile: lista */}
           <div className="md:hidden space-y-2">
-            {mockCurrencies.map((currency) => (
+            {paginate(currencies, pageCurrencies, pageSizeCurrencies).map((currency) => (
               <div
                 key={currency.code}
                 className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
@@ -149,6 +178,27 @@ function round(value: number, decimals = 2): number {
               </div>
             ))}
           </div>
+          <div className="flex justify-between items-center mt-4">
+            <button
+              className="btn cursor-pointer"
+              disabled={pageCurrencies === 0}
+              onClick={() => setPageCurrencies((p) => p - 1)}
+            >
+              Anterior
+            </button>
+
+            <span className="text-sm text-muted-foreground">
+              Página {pageCurrencies + 1} de {Math.ceil(currencies.length / pageSizeCurrencies)}
+            </span>
+
+            <button
+              className="btn cursor-pointer"
+              disabled={(pageCurrencies + 1) * pageSizeCurrencies >= currencies.length}
+              onClick={() => setPageCurrencies((p) => p + 1)}
+            >
+              Próxima
+            </button>
+          </div>
         </CardContent>
       </Card>
 
@@ -163,7 +213,7 @@ function round(value: number, decimals = 2): number {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockTopGainers.map((stock) => (
+              {paginate(stockAsc, pageAsc, pageSize).map((stock) => (
                 <div
                   key={stock.symbol}
                   className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
@@ -171,17 +221,38 @@ function round(value: number, decimals = 2): number {
                   <div>
                     <p className="font-medium">{stock.symbol}</p>
                     <p className="text-sm text-muted-foreground">
-                      {stock.name}
+                      {stock.longName}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">R$ {stock.price.toFixed(2)}</p>
+                    <p className="font-medium">R$ {stock.regularMarketPrice.toFixed(2)}</p>
                     <Badge variant="default" className="bg-success">
-                      +{stock.change.toFixed(2)}%
+                      +{stock.regularMarketChangePercent.toFixed(2)}%
                     </Badge>
                   </div>
                 </div>
               ))}
+               <div className="flex justify-between mt-4">
+                  <button
+                    className="btn cursor-pointer"
+                    disabled={pageAsc === 0}
+                    onClick={() => setPageAsc((p) => p - 1)}
+                  >
+                    Anterior
+                  </button>
+
+                  <span className="text-sm text-muted-foreground">
+                    Página {pageAsc + 1} de {Math.ceil(stockAsc.length / pageSize)}
+                  </span>
+
+                  <button
+                    className="btn cursor-pointer"
+                    disabled={(pageAsc + 1) * pageSize >= stockAsc.length}
+                    onClick={() => setPageAsc((p) => p + 1)}
+                  >
+                    Próxima
+                  </button>
+                </div>
             </div>
           </CardContent>
         </Card>
@@ -196,7 +267,7 @@ function round(value: number, decimals = 2): number {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockTopLosers.map((stock) => (
+              {paginate(stockDesc, pageDesc, pageSize).map((stock) => (
                 <div
                   key={stock.symbol}
                   className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
@@ -204,17 +275,38 @@ function round(value: number, decimals = 2): number {
                   <div>
                     <p className="font-medium">{stock.symbol}</p>
                     <p className="text-sm text-muted-foreground">
-                      {stock.name}
+                      {stock.longName}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">R$ {stock.price.toFixed(2)}</p>
+                    <p className="font-medium">R$ {stock.regularMarketPrice.toFixed(2)}</p>
                     <Badge variant="destructive">
-                      {stock.change.toFixed(2)}%
+                      {stock.regularMarketChangePercent.toFixed(2)}%
                     </Badge>
                   </div>
                 </div>
               ))}
+                <div className="flex justify-between mt-4">
+                  <button
+                    className="btn cursor-pointer"
+                    disabled={pageDesc === 0}
+                    onClick={() => setPageDesc((p) => p - 1)}
+                  >
+                    Anterior
+                  </button>
+
+                  <span className="text-sm text-muted-foreground">
+                    Página {pageDesc + 1} de {Math.ceil(stockDesc.length / pageSize)}
+                  </span>
+
+                  <button
+                    className="btn cursor-pointer"
+                    disabled={(pageDesc + 1) * pageSize >= stockDesc.length}
+                    onClick={() => setPageDesc((p) => p + 1)}
+                  >
+                    Próxima
+                  </button>
+                </div>
             </div>
           </CardContent>
         </Card>

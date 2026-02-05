@@ -10,7 +10,7 @@ import { Goal } from "@/components/model/goal";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { categoryList } from "./model/category";
+import { categoryList, getNameCategoryById } from "./model/category";
 import { MonthYearPicker } from "./shared/MonthYearPicker";
 import { format } from "path";
 
@@ -31,8 +31,16 @@ export function GoalModal({
   const [formData, setFormData] = useState<Goal>(new Goal());
 
   useEffect(() => {
-    setFormData(goal ?? new Goal());
-  }, [goal, open]);
+    if (!goal) {
+      setFormData(new Goal());
+      return;
+    }
+
+    setFormData({
+      ...goal,
+      category: getNameCategoryById(Number(goal.category)),
+    });
+    }, [goal, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

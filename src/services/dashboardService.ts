@@ -25,5 +25,12 @@ export async function getAllRates(){
      const { data } = await api.get("api/v1/public/find-all-rates", {});
      return data;
  }
+
+
+export async function getAllStocks(){
+     const { data } = await api.get("api/v1/public/find-all-stocks", {});
+     return data;
+ }
+  
  
  

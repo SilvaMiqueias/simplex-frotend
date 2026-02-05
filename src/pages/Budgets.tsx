@@ -22,60 +22,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { DeleteAlertDialog } from "@/components/DeleteAlertDialog";
 
-
-
-const mockBudgets = [
-  {
-    category: "Alimentação",
-    limit: 1000,
-    spent: 820,
-    percentage: 82,
-  },
-  {
-    category: "Transporte",
-    limit: 500,
-    spent: 380,
-    percentage: 76,
-  },
-  {
-    category: "Lazer",
-    limit: 300,
-    spent: 150,
-    percentage: 50,
-  },
-  {
-    category: "Saúde",
-    limit: 400,
-    spent: 200,
-    percentage: 50,
-  },
-];
-
-const mockGoals = [
-  {
-    title: "Fundo de Emergência",
-    target: 10000,
-    current: 6500,
-    percentage: 65,
-  },
-  {
-    title: "Viagem de Férias",
-    target: 5000,
-    current: 2800,
-    percentage: 56,
-  },
-];
 
 export default function Budgets() {
 const [reload, setReload] = useState(0);
@@ -91,6 +39,7 @@ const [editingBudget, setEditingBudget] = useState<Budget | undefined>();
 const [editingGoal, setEditingGoal] = useState<Goal | undefined>();
 
 const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+const [isDeleteGoalOpen, setIsDeleteGoalOpen] = useState(false);
 const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
 const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
 
@@ -202,7 +151,7 @@ function transformToBudget(chart: BudgetChart): Budget{
 async function  handleGoalSave(goal: Goal)  {
    setLoading(true);
   try{
-    if(editingBudget){
+    if(editingGoal){
        await updateGoal(goal);
     }else{
       await createGoal(goal);
@@ -229,9 +178,22 @@ async function updateGoal(goal: Goal) {
     toast.success("Meta editada com sucesso!");
 }
 
+const handleGoalEdit = (goal: Goal) => {
+     setEditingGoal(goal);
+     setGoalModalOpen(true);
+};
+
 const openDeleteDialogGoal = (goal: Goal) => {
     setGoalToDelete(goal);
-    setIsDeleteOpen(true);
+    setIsDeleteGoalOpen(true);
+};
+
+const confirmDeleteGoal = () => {
+    if (goalToDelete) {
+      handleDeleteGoal(Number(goalToDelete.id));
+    }
+    setIsDeleteGoalOpen(false);
+    setGoalToDelete(null);
 };
 
 async function handleDeleteGoal(id: number){
@@ -239,10 +201,10 @@ async function handleDeleteGoal(id: number){
    try{
     await requestDeleteGoal(id);
     toast.success('Meta excluída com sucesso!');
-    setReload((prev) => prev + 1);
    }catch(erro){
       toast.error('Ocorreu um erro ao excluir a meta!');    
    }finally{
+    setReload((prev) => prev + 1);
     setLoading(false);
    }
 };
@@ -312,16 +274,6 @@ return (
       </div>
     </div>
 
-      {/* Alertas */}
-      {/* <Alert
-        variant="destructive"
-        className="border-destructive/50 bg-destructive/10"
-      >
-        <AlertCircle className="h-4 w-4 text-destructive" />
-        <AlertDescription className="text-destructive">
-          Atenção: Você já utilizou 82% do orçamento de Alimentação este mês.
-        </AlertDescription>
-      </Alert> */}
 
       {/* Orçamentos */}
       <div className="space-y-4">
@@ -414,61 +366,119 @@ return (
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Metas de Economia</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          {dataGoal.map((goal) => (
+         
+         
+          {dataGoal.map((goal) => {
+
+            const spent = goal.achievedAmount ?? 0;
+            const total = goal.amount;
+
+            const progress =
+              total > 0
+                ? Math.min((spent / total) * 100, 100)
+                : 0;
+
+            const isOverLimit = progress >= 80;
+
+            
+            return (
             <Card key={goal.category} className="shadow-soft">
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">{getDescriptionCategory(goal.category)}</CardTitle>
+                <div  className="flex items-center justify-between  gap-4">
+                  <div className="flex items-center justify-between gap-4">
+                      <Target className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">{getDescriptionCategoryById(Number(goal.category))}</CardTitle>
+                  </div>
+                   <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-lg"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-xl">
+                                <DropdownMenuItem onClick={() => handleGoalEdit(goal)}  className="rounded-lg">
+                                  <Pencil   className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem  onClick={() => openDeleteDialogGoal(goal)} className="text-destructive rounded-lg">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                    </DropdownMenu> 
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">
-                    R$ {goal.amount.toFixed(2)} de R$ {goal.amount.toFixed(2)}
+                    R$ {spent.toFixed(2)} de R$ {total.toFixed(2)}
                   </span>
-                  <span className="text-primary font-medium">
-                    {goal.amount}%
+                  <span
+                    className={
+                       isOverLimit
+                        ? "text-destructive font-medium"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {progress.toFixed(0)}%
                   </span>
                 </div>
                 <Progress
-                  value={goal.amount}
+                  value={progress}
                   className="h-2"
-                  indicatorClassName="bg-primary"
+                  indicatorClassName={
+                    isOverLimit ? "bg-destructive" : "bg-success"
+                  }
                 />
-             {/*    <p className="text-xs text-muted-foreground">
-                  Faltam R$ {(goal.target - goal.current).toFixed(2)} para
-                  atingir sua meta
-                </p> */}
               </CardContent>
+              {isOverLimit && (
+              <div style={{display: "flex", justifyContent: "center"}}>
+                      <Alert
+                                    variant="destructive"
+                                    className="border-destructive/50 bg-destructive/10 "
+                                    style={{margin: "20px"}}
+                                  >
+                                    <AlertCircle className="h-4 w-4 text-destructive" />
+                                    <AlertDescription className="text-destructive">
+                                      Atenção: Você já utilizou {progress.toFixed(0)}% da Meta de {" "} {getDescriptionCategoryById(Number(goal.category))} .
+                                    </AlertDescription>
+                                  </Alert>
+              </div>
+              )}
             </Card>
-          ))}
+          )})}
         </div>
       </div>
 
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Orçamento?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {budgetToDelete
-                ? `Tem certeza que deseja excluir "${getDescriptionCategory(budgetToDelete.category)}"? Esta ação não pode ser desfeita.`
-                : "Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="w-full sm:flex-1">
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="w-full sm:flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={confirmDeleteBudget}
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteAlertDialog
+                    open={isDeleteOpen}
+                    onOpenChange={setIsDeleteOpen}
+                    item={budgetToDelete}
+                    title="Excluir Orçamento?"
+                    description={(budget) =>
+                      budget
+                        ? `Tem certeza que deseja excluir "${getDescriptionCategory(budget.category)}"? Esta ação não pode ser desfeita.`
+                        : "Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita."
+                    }
+            onConfirm={confirmDeleteBudget}
+       />
+
+      <DeleteAlertDialog
+          open={isDeleteGoalOpen}
+          onOpenChange={setIsDeleteGoalOpen}
+          item={goalToDelete}
+          title="Excluir Meta?"
+          description={(goal) =>
+            goal
+              ? `Tem certeza que deseja excluir a meta "${getDescriptionCategoryById(Number(goal.category))}"? Esta ação não pode ser desfeita.`
+              : "Tem certeza que deseja excluir esta meta? Esta ação não pode ser desfeita."
+          }
+          onConfirm={confirmDeleteGoal}
+        />
     </div>
   );
 }

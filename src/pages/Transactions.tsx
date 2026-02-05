@@ -53,6 +53,8 @@ export default function Transactions() {
   const { setLoading } = useLoading();
   const [reload, setReload] = useState(0);
   const [catogories, setCategories] =  useState<Category[]>([]);
+  const [pageTransactions, setPageTransactions] = useState(0);
+  const pageSizeTransactions = 10;
 
 
 
@@ -143,6 +145,11 @@ export default function Transactions() {
     setTransactionToDelete(null);
   };
 
+  function paginate<T>(items: T[], page: number, size: number) {
+    const start = page * size;
+    return items.slice(start, start + size);
+  }
+
 
   return (
     <div className="space-y-6">
@@ -223,7 +230,7 @@ export default function Transactions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTransactions.map((transaction) => (
+               {paginate(filteredTransactions, pageTransactions, pageSizeTransactions).map((transaction) => (   
                   <TableRow key={transaction.id}>
                     <TableCell>
                       {new Date(transaction.dateTransaction).toLocaleDateString("pt-BR")}
@@ -344,6 +351,27 @@ export default function Transactions() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="flex justify-between items-center mt-4">
+            <button
+              className="btn cursor-pointer"
+              disabled={pageTransactions === 0}
+              onClick={() => setPageTransactions((p) => p - 1)}
+            >
+              Anterior
+            </button>
+
+            <span className="text-sm text-muted-foreground">
+              Página { filteredTransactions.length > 0  ? pageTransactions + 1 : 0} de {Math.ceil(filteredTransactions.length / pageSizeTransactions)}
+            </span>
+
+            <button
+              className="btn cursor-pointer"
+              disabled={(pageTransactions + 1) * pageSizeTransactions >= filteredTransactions.length}
+              onClick={() => setPageTransactions((p) => p + 1)}
+            >
+              Próxima
+            </button>
           </div>
         </CardContent>
       </Card>
