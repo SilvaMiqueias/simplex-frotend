@@ -39,6 +39,7 @@ export function TransactionList() {
     <div>
       <h3 className="text-lg font-semibold mb-4">Transações Recentes</h3>
       <div className="space-y-2">
+        {dataTransaction.length == 0 && (   <p className="text-center">Não houve nenhuma transação.</p> )}
         {dataTransaction.map((transaction) => (
           <div
             key={transaction.id}

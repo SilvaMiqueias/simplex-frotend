@@ -88,7 +88,7 @@ export default function TwoFactor() {
               </div>   
           )}
 
-           {status === "2fa_required" && !showQrCode && (    
+           {!showQrCode && (    
         <div style={{display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", gap: "32px" , textAlign: "justify"}}>
           <h1 style={{fontWeight: 700, fontSize: "25px"}}>Autenticação em dois fatores</h1>
 
