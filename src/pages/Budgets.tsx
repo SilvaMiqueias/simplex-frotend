@@ -222,8 +222,8 @@ return (
           Acompanhe seus gastos e objetivos
         </p>
       </div>
-    <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-6 col-start-1 gap-2">
+      <div className="grid grid-cols-12 gap-4">
+          <div className=" md:col-span-6  gap-2">
                     <p>Data de Referência</p>
                     <MonthYearPicker
                             value={
@@ -243,7 +243,7 @@ return (
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-      <div className="flex gap-6">
+      <div className="flex gap-2">
         <Button
           onClick={() => setBudgetModalOpen(true)}
           className="gap-2 w-full sm:w-auto">
@@ -378,7 +378,7 @@ return (
                 ? Math.min((spent / total) * 100, 100)
                 : 0;
 
-            const isOverLimit = progress >= 95;
+            const isOverLimit = progress >= 80;
 
             
             return (
@@ -420,8 +420,8 @@ return (
                   <span
                     className={
                        isOverLimit
-                        ? "text-success font-medium"
-                        : (Number(progress.toFixed(0)) < 95 ? "text-muted-foreground" : "text-amber-600") 
+                        ? "text-destructive font-medium"
+                        : "text-muted-foreground"
                     }
                   >
                     {progress.toFixed(0)}%
@@ -431,29 +431,21 @@ return (
                   value={progress}
                   className="h-2"
                   indicatorClassName={
-                    isOverLimit ? "bg-success" :  (Number(progress.toFixed(0)) < 50 ? "bg-destructive" : "bg-yellow-500")
+                    isOverLimit ? "bg-destructive" : "bg-success"
                   }
                 />
               </CardContent>
               {isOverLimit && (
               <div style={{display: "flex", justifyContent: "center"}}>
                       <Alert
-                                    variant="default"
-                                    className="border-default/50 bg-success/10 "
+                                    variant="destructive"
+                                    className="border-destructive/50 bg-destructive/10 "
                                     style={{margin: "20px"}}
                                   >
-                                    <AlertCircle className="h-4 w-4 text-success" />
-
-                                      {Number(progress.toFixed(0)) <  100 && (
-                                        <AlertDescription className="text-success">                           
-                                            <p>Atenção: Você já atingiu {progress.toFixed(0)}% da Meta de {" "} {getDescriptionCategoryById(Number(goal.category))} . </p>
-                                        </AlertDescription>
-                                    ) }
-                                      {Number(progress.toFixed(0)) ===  100 && (
-                                          <AlertDescription className="text-success">             
-                                              <p>Meta Atingida! 🎉 </p>
-                                          </AlertDescription>
-                                      ) }
+                                    <AlertCircle className="h-4 w-4 text-destructive" />
+                                    <AlertDescription className="text-destructive">
+                                      Atenção: Você já utilizou {progress.toFixed(0)}% da Meta de {" "} {getDescriptionCategoryById(Number(goal.category))} .
+                                    </AlertDescription>
                                   </Alert>
               </div>
               )}

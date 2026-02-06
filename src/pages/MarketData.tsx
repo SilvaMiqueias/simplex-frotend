@@ -55,14 +55,17 @@ async function getStocks() {
   setLoading(true);
   const  response = await getAllStocks();
   setStock(response.results);
-  let desc = orderByChangePercent(response.results, "asc", "negative");
-  let asc  = orderByChangePercent(response.results, "desc", "positive");
+
+  const uniqueStocks = Array.from(
+  new Map(response.results.map(s => [s.symbol, s])).values()) 
+  let desc = orderByChangePercent(uniqueStocks, "asc", "negative");
+  let asc  = orderByChangePercent(uniqueStocks, "desc", "positive");
   setStockDesc(desc);
   setStockAsc(asc);
   setLoading(false);
 }
 function orderByChangePercent(
-  stocks: Stocks[],
+  stocks: any[],
   direction: "asc" | "desc",
   filter?: "positive" | "negative"
 ) {

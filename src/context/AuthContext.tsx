@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   async function getUser(email: string) {
-     const { data } = await api.get("/auth/users/get-user", {params: {email}});
+     const { data } = await api.get("/authenticated/get-user", {params: {email}});
      setImage(`data:image/jpeg;base64,${data.image}`);
      return data;
     }
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username,
     image,
     ) {
-    const { data } = await api.put(`/auth/users/update`, {
+    const { data } = await api.put(`/authenticated/update`, {
       id,
       name,
       username,
